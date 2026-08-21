@@ -2308,7 +2308,9 @@
                 document.getElementById('input-name-hunter').value = currentNames.hunter;
                 document.getElementById('input-name-escaper').value = currentNames.escaper;
                 ['p1', 'p2', 'red', 'blue', 'green', 'yellow', 'hunter', 'escaper'].forEach(refreshSwatchUI);
-                applyStaticTranslations()
+                applyStaticTranslations();
+                const modeTitleKey = mode === '4p' ? 'mode4p' : (mode === 'hunter' ? 'modeHunter' : 'mode2p');
+                setTextContent('name-entry-title', t(modeTitleKey))
             }
             document.getElementById('btn-name-back').onclick = () => {
                 document.getElementById('name-entry-view').style.display = 'none';
