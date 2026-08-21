@@ -2309,8 +2309,8 @@
                 document.getElementById('input-name-escaper').value = currentNames.escaper;
                 ['p1', 'p2', 'red', 'blue', 'green', 'yellow', 'hunter', 'escaper'].forEach(refreshSwatchUI);
                 applyStaticTranslations();
-                const modeTitleKey = mode === '4p' ? 'mode4p' : (mode === 'hunter' ? 'modeHunter' : 'mode2p');
-                setTextContent('name-entry-title', t(modeTitleKey))
+                const modeTitleText = mode === 'hunter' ? 'گرگ مقابل میش' : 'کلاسیک';
+                setTextContent('name-entry-title', modeTitleText)
             }
             document.getElementById('btn-name-back').onclick = () => {
                 document.getElementById('name-entry-view').style.display = 'none';
