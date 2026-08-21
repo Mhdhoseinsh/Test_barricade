@@ -206,9 +206,10 @@
                     aboutCreatorName: 'Mohammad hossein shamsi',
                     aboutFollowLabel: 'Follow us',
                     aboutClose: 'Close',
-                    startSubtitle: 'Offline pass-and-play — choose a mode',
+                    startSubtitle: 'Your path to victory starts here.',
                     howToPlay: 'How to Play',
-                    modeClassicTitle: 'Classic Race (2 or 4 Players)',
+                    modeClassicTitle: 'Classic Game',
+                    modeClassicShort: 'Classic',
                     modeClassicDesc: 'Block your rivals and race to the other side.',
                     modeClassicBadge: '2-4',
                     pc2Label: '2 Players',
@@ -355,9 +356,10 @@
                     aboutCreatorName: 'محمدحسین شمسی',
                     aboutFollowLabel: 'ما را دنبال کنید',
                     aboutClose: 'بستن',
-                    startSubtitle: 'یک بازی افلاین نوبتی روی گوشی',
+                    startSubtitle: 'مسیر برد از اینجا شروع می‌شود',
                     howToPlay: 'آموزش بازی',
-                    modeClassicTitle: 'مسابقه کلاسیک (دو یا چهار نفره)',
+                    modeClassicTitle: 'بازی کلاسیک',
+                    modeClassicShort: 'کلاسیک',
                     modeClassicDesc: 'با گذاشتن دیوار جلوی حریف را بگیر و زودتر به سمت مقابل برس.',
                     modeClassicBadge: '۲-۴',
                     pc2Label: 'دو نفره',
@@ -2309,8 +2311,7 @@
                 document.getElementById('input-name-escaper').value = currentNames.escaper;
                 ['p1', 'p2', 'red', 'blue', 'green', 'yellow', 'hunter', 'escaper'].forEach(refreshSwatchUI);
                 applyStaticTranslations();
-                const modeTitleText = mode === 'hunter' ? 'گرگ مقابل میش' : 'کلاسیک';
-                setTextContent('name-entry-title', modeTitleText)
+                setTextContent('name-entry-title', t(mode === 'hunter' ? 'modeHunterTitle' : 'modeClassicShort'))
             }
             document.getElementById('btn-name-back').onclick = () => {
                 document.getElementById('name-entry-view').style.display = 'none';
