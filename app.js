@@ -999,6 +999,16 @@
                         const pid = (data.id !== undefined) ? data.id : (onlineState.localPlayerId === 0 ? 1 : 0);
                         onlineLobby.othersById[pid] = { name: (data.name || '').slice(0, 13), color: data.color || customColor(slotNameForId(onlineState.mode, pid)) };
                         updateOnlineOppUI()
+                    } else if (data.type === 'timer-sync') {
+                        // Authoritative deadline from whichever device's player
+                        // just started their turn — replaces our own
+                        // provisional estimate so both devices count down from
+                        // the exact same real-world instant, regardless of the
+                        // network delay it took this message to arrive.
+                        turnTimerPlayerId = data.playerId;
+                        turnTimerDeadline = data.deadline;
+                        if (!turnTimerInterval) turnTimerInterval = setInterval(tickTurnTimer, 250);
+                        renderAllPlayerClocks()
                     }
                 } finally {
                     onlineState.applyingRemote = !1
@@ -1120,7 +1130,21 @@
                 const p = currentPlayer();
                 if (!p) { renderAllPlayerClocks(); return }
                 const bank = (p.timeBank != null) ? p.timeBank : currentTurnTimerSeconds;
+                // In online mode, only the device whose own player's turn is
+                // starting is authoritative for the deadline — it computes it
+                // once from its own clock and broadcasts it. The other device
+                // must NOT compute its own deadline independently: doing so
+                // means each side anchors "now" at a different real-world
+                // moment (whenever the move message happens to arrive on
+                // their end), which is exactly what caused the two players'
+                // clocks to disagree. The non-owner sets a provisional value
+                // here only so the UI isn't blank for the instant before the
+                // 'timer-sync' message (sent right below) arrives; it gets
+                // overwritten the moment that message is handled.
                 turnTimerDeadline = Date.now() + bank * 1000;
+                if (onlineState.active && isMyOnlineTurn()) {
+                    sendOnline({ type: 'timer-sync', playerId: p.id, deadline: turnTimerDeadline })
+                }
                 renderAllPlayerClocks();
                 // Ticking more often than once a second just means the on-screen
                 // number and the progress bar update smoothly; the actual
