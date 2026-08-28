@@ -21,61 +21,6 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// ---- Rate limiting ---------------------------------------------------------
-// Everything below is per-IP, sliding-window, in-memory. Goal: stop one
-// person/script from spamming createRoom/joinRoom/messages and either
-// exhausting server memory or hammering another player's game.
-const RATE_LIMITS = {
-  createRoom: { max: 8, windowMs: 60 * 1000 },     // 8 rooms/min per IP
-  joinRoom: { max: 20, windowMs: 60 * 1000 },       // 20 join attempts/min per IP
-  roomExists: { max: 30, windowMs: 60 * 1000 },     // 30 code checks/min per IP
-  roomMessage: { max: 240, windowMs: 60 * 1000 },   // 240 game messages/min per IP (~4/sec)
-};
-const MAX_ROOMS_TOTAL = 5000;            // hard ceiling on rooms kept in memory
-const MAX_SOCKETS_PER_IP = 12;           // stop one IP from opening endless connections
-
-// hits: Map<ip, Map<eventName, number[]>> — timestamps of recent hits
-const rateHits = new Map();
-// connectionsPerIp: Map<ip, count>
-const connectionsPerIp = new Map();
-
-function getClientIp(socket) {
-  // Respect a proxy's forwarded header when present (Render sits behind one),
-  // otherwise fall back to the raw socket address.
-  const fwd = socket.handshake.headers['x-forwarded-for'];
-  if (fwd) return String(fwd).split(',')[0].trim();
-  return socket.handshake.address || 'unknown';
-}
-
-function isRateLimited(ip, eventName) {
-  const limit = RATE_LIMITS[eventName];
-  if (!limit) return false;
-  const now = Date.now();
-  let perIp = rateHits.get(ip);
-  if (!perIp) { perIp = new Map(); rateHits.set(ip, perIp); }
-  let hits = perIp.get(eventName);
-  if (!hits) { hits = []; perIp.set(eventName, hits); }
-  // Drop anything outside the window, then check/record.
-  while (hits.length && hits[0] <= now - limit.windowMs) hits.shift();
-  if (hits.length >= limit.max) return true;
-  hits.push(now);
-  return false
-}
-
-// Periodically drop rate-limit bookkeeping for IPs that have gone quiet, so
-// this doesn't grow forever either.
-setInterval(() => {
-  const cutoff = Date.now() - 5 * 60 * 1000;
-  for (const [ip, perIp] of rateHits.entries()) {
-    let stillActive = false;
-    for (const hits of perIp.values()) {
-      while (hits.length && hits[0] <= cutoff) hits.shift();
-      if (hits.length) stillActive = true;
-    }
-    if (!stillActive) rateHits.delete(ip);
-  }
-}, 5 * 60 * 1000);
-
 // ---- In-memory room store -------------------------------------------------
 // rooms: Map<code, { maxPlayers, createdAt, players: { [slot]: {joinedAt, connected, leftAt} } }>
 const rooms = new Map();
@@ -124,20 +69,8 @@ function handleLeave(socket) {
 io.on('connection', (socket) => {
   socket.data.roomCode = null;
   socket.data.slot = null;
-  const ip = getClientIp(socket);
-  socket.data.ip = ip;
-
-  const currentForIp = (connectionsPerIp.get(ip) || 0) + 1;
-  connectionsPerIp.set(ip, currentForIp);
-  if (currentForIp > MAX_SOCKETS_PER_IP) {
-    socket.emit('errorMsg', { code: 'too-many-connections' });
-    socket.disconnect(true);
-    return;
-  }
 
   socket.on('createRoom', ({ maxPlayers } = {}, ack) => {
-    if (isRateLimited(ip, 'createRoom')) { if (ack) ack({ ok: false, error: 'rate-limited' }); return; }
-    if (rooms.size >= MAX_ROOMS_TOTAL) { if (ack) ack({ ok: false, error: 'server-full' }); return; }
     const code = genRoomCode();
     rooms.set(code, {
       maxPlayers: maxPlayers || 2,
@@ -148,13 +81,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('roomExists', ({ code } = {}, ack) => {
-    if (isRateLimited(ip, 'roomExists')) { if (ack) ack({ exists: false, error: 'rate-limited' }); return; }
     const exists = rooms.has(String(code || '').toUpperCase());
     if (ack) ack({ exists });
   });
 
   socket.on('joinRoom', ({ code, maxPlayers } = {}, ack) => {
-    if (isRateLimited(ip, 'joinRoom')) { if (ack) ack({ ok: false, error: 'rate-limited' }); return; }
     code = String(code || '').toUpperCase();
     const room = rooms.get(code);
     if (!room) { if (ack) ack({ ok: false, error: 'not-found' }); return; }
@@ -197,7 +128,6 @@ io.on('connection', (socket) => {
     const code = socket.data.roomCode;
     const slot = socket.data.slot;
     if (!code || slot === null || slot === undefined || !rooms.has(code)) return;
-    if (isRateLimited(ip, 'roomMessage')) return;
     socket.to('room:' + code).emit('roomMessage', {
       from: slot,
       t: Date.now(),
@@ -206,12 +136,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('leaveRoom', () => handleLeave(socket));
-  socket.on('disconnect', () => {
-    handleLeave(socket);
-    const remaining = (connectionsPerIp.get(ip) || 1) - 1;
-    if (remaining <= 0) connectionsPerIp.delete(ip);
-    else connectionsPerIp.set(ip, remaining)
-  });
+  socket.on('disconnect', () => handleLeave(socket));
 });
 
 // Simple health check — also handy as an uptime-ping target so free hosts
