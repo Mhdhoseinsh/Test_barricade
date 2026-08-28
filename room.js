@@ -44,7 +44,7 @@
 
                 async joinRoom(code, maxPlayers) {
                     const res = await emitAck('joinRoom', { code, maxPlayers });
-                    if (!res || !res.ok) return null;
+                    if (!res || !res.ok) throw new Error((res && res.error) || 'join-failed');
                     window.FBRoom._roomCode = code;
                     window.FBRoom._mySlotId = res.slot;
                     window.FBRoom._joinedAt = Date.now();
