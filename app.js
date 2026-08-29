@@ -2579,7 +2579,17 @@
                 card.dataset.playerId = p.id;
                 const isTeamBIn4p = gameMode === '4p' && p.team === 1;
                 if (isTeamBIn4p) card.classList.add('team-b-align');
-                const isRightSide = (!forMobileTeamLayout && (gameMode === '2p' || gameMode === 'hunter') && p.id === 1) || (forMobileTeamLayout && p.team === 1) || isTeamBIn4p;
+                // NOTE: for 'hunter' mode we must NOT key this off p.id.
+                // setupHunter() always builds the players array as
+                // [escaperObj, hunterObj] (escaper first/left, hunter
+                // second/right) regardless of which numeric id ends up on
+                // which role — in online matches the role lottery can hand
+                // id 0 to the hunter and id 1 to the escaper. Using p.id===1
+                // here would then flip the *internal* alignment of a card
+                // whose *position* never actually moved, breaking the
+                // layout only in that (random) case. p.role stays correctly
+                // tied to array position, so use that instead for hunter mode.
+                const isRightSide = (!forMobileTeamLayout && ((gameMode === '2p' && p.id === 1) || (gameMode === 'hunter' && p.role === 'hunter'))) || (forMobileTeamLayout && p.team === 1) || isTeamBIn4p;
                 const avatar = document.createElement('div');
                 avatar.className = 'avatar';
                 avatar.style.background = p.color;
