@@ -2776,9 +2776,9 @@
                 if (isAnimating) return;
                 isAnimating = !0;
                 const startX = padding + oldCol * cellSize + cellSize / 2;
-                const startY = padding + dispRow(oldRow) * cellSize + cellSize / 2;
+                const startY = padding + oldRow * cellSize + cellSize / 2;
                 const endX = padding + newCol * cellSize + cellSize / 2;
-                const endY = padding + dispRow(newRow) * cellSize + cellSize / 2;
+                const endY = padding + newRow * cellSize + cellSize / 2;
                 animData = {
                     x1: startX,
                     y1: startY,
@@ -2838,30 +2838,6 @@
                 if (updated && (animData || wallAnimation)) requestAnimationFrame(loopAnimation)
             }
 
-            // Visual-only board orientation: makes each player's own piece
-            // start near the bottom of the screen instead of some players
-            // starting at the top. This never touches game state — row/col
-            // stay absolute everywhere else (moves, walls, win checks); the
-            // flip is applied only at the two boundaries where board
-            // coordinates become screen pixels (drawing) and back (input).
-            // Offline pass-and-play: flips per turn, so whoever is moving
-            // sees their own piece at the bottom. Online: fixed per device,
-            // based on the local player's own side. Not applied in 4-player
-            // mode (goals aren't purely top/bottom there).
-            function isBoardFlipped() {
-                if (gameMode === '4p' || !players || !players.length) return !1;
-                const p = onlineState.active ? players.find(pl => pl.id === onlineState.localPlayerId) : currentPlayer();
-                return !!(p && p.target === 'row8')
-            }
-
-            function dispRow(r) {
-                return isBoardFlipped() ? 8 - r : r
-            }
-
-            function dispWallRow(r) {
-                return isBoardFlipped() ? 7 - r : r
-            }
-
             function draw() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.strokeStyle = '#282f3a';
@@ -2878,8 +2854,8 @@
                 }
                 for (const p of players) {
                     ctx.fillStyle = hexToRgba(p.color, 0.09);
-                    if (p.target === 'row0') ctx.fillRect(padding, padding + dispRow(0) * cellSize, 9 * cellSize, cellSize);
-                    else if (p.target === 'row8') ctx.fillRect(padding, padding + dispRow(8) * cellSize, 9 * cellSize, cellSize);
+                    if (p.target === 'row0') ctx.fillRect(padding, padding, 9 * cellSize, cellSize);
+                    else if (p.target === 'row8') ctx.fillRect(padding, padding + 8 * cellSize, 9 * cellSize, cellSize);
                 }
                 if (!gameOver && uiMode === 'move' && !isAnimating && !captureAnim && players.length && (!onlineState.active || isMyOnlineTurn())) {
                     const player = currentPlayer();
@@ -2901,7 +2877,7 @@
                             ctx.strokeStyle = `rgba(255,255,255,${pulse*0.6})`;
                             ctx.shadowColor = 'rgba(255,255,255,0.4)'
                         }
-                        ctx.strokeRect(padding + c * cellSize + 3, padding + dispRow(r) * cellSize + 3, cellSize - 6, cellSize - 6)
+                        ctx.strokeRect(padding + c * cellSize + 3, padding + r * cellSize + 3, cellSize - 6, cellSize - 6)
                     }
                     ctx.shadowBlur = 0
                 }
@@ -2912,15 +2888,15 @@
                     ctx.shadowBlur = 12;
                     ctx.shadowColor = 'rgba(255,255,255,0.25)';
                     ctx.beginPath();
-                    if (uiMode === 'hwall') ctx.roundRect(padding + pos.col * cellSize, padding + (dispWallRow(pos.row) + 1) * cellSize -
+                    if (uiMode === 'hwall') ctx.roundRect(padding + pos.col * cellSize, padding + (pos.row + 1) * cellSize -
                         4, cellSize * 2, 8, 4);
-                    else ctx.roundRect(padding + (pos.col + 1) * cellSize - 4, padding + dispWallRow(pos.row) * cellSize, 8, cellSize * 2,
+                    else ctx.roundRect(padding + (pos.col + 1) * cellSize - 4, padding + pos.row * cellSize, 8, cellSize * 2,
                         4);
                     ctx.fill();
                     ctx.shadowBlur = 0;
                     if (touchAnchorPos) {
                         const barCx = padding + (pos.col + 1) * cellSize;
-                        const barCy = padding + (dispWallRow(pos.row) + 1) * cellSize;
+                        const barCy = padding + (pos.row + 1) * cellSize;
                         const anchorX = padding + touchAnchorPos.x;
                         const anchorY = padding + touchAnchorPos.y;
                         ctx.save();
@@ -2950,9 +2926,9 @@
                     ctx.shadowBlur = 16;
                     ctx.shadowColor = hexToRgba(col, 0.7);
                     ctx.beginPath();
-                    if (pos.mode === 'hwall') ctx.roundRect(padding + pos.col * cellSize, padding + (dispWallRow(pos.row) + 1) * cellSize -
+                    if (pos.mode === 'hwall') ctx.roundRect(padding + pos.col * cellSize, padding + (pos.row + 1) * cellSize -
                         4, cellSize * 2, 8, 4);
-                    else ctx.roundRect(padding + (pos.col + 1) * cellSize - 4, padding + dispWallRow(pos.row) * cellSize, 8, cellSize * 2,
+                    else ctx.roundRect(padding + (pos.col + 1) * cellSize - 4, padding + pos.row * cellSize, 8, cellSize * 2,
                         4);
                     ctx.fill();
                     ctx.shadowBlur = 0
@@ -2968,7 +2944,7 @@
                                 wallAnimation.progress;
                             ctx.globalAlpha = wp;
                             ctx.beginPath();
-                            ctx.roundRect(padding + c * cellSize, padding + (dispWallRow(r) + 1) * cellSize - 3, cellSize, 6, 3);
+                            ctx.roundRect(padding + c * cellSize, padding + (r + 1) * cellSize - 3, cellSize, 6, 3);
                             ctx.fill()
                         }
                     }
@@ -2980,7 +2956,7 @@
                                 wallAnimation.progress;
                             ctx.globalAlpha = wp;
                             ctx.beginPath();
-                            ctx.roundRect(padding + (c + 1) * cellSize - 3, padding + dispRow(r) * cellSize, 8, cellSize, 3);
+                            ctx.roundRect(padding + (c + 1) * cellSize - 3, padding + r * cellSize, 8, cellSize, 3);
                             ctx.fill()
                         }
                     }
@@ -2997,7 +2973,7 @@
                 const hunterP = players.find(p => p.role === 'hunter');
                 const escaperP = players.find(p => p.role === 'escaper');
                 const x = padding + escaperP.col * cellSize + cellSize / 2;
-                const y = padding + dispRow(escaperP.row) * cellSize + cellSize / 2;
+                const y = padding + escaperP.row * cellSize + cellSize / 2;
                 const p = captureAnim.progress;
                 ctx.save();
                 if (p < 0.55) {
@@ -3079,7 +3055,7 @@
 
             function drawPiece(player, isAnimatingPiece) {
                 let x = padding + player.col * cellSize + cellSize / 2;
-                let y = padding + dispRow(player.row) * cellSize + cellSize / 2;
+                let y = padding + player.row * cellSize + cellSize / 2;
                 if (isAnimatingPiece && animData) {
                     const p = Math.min(1, animData.progress);
                     const ease = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
@@ -3720,10 +3696,10 @@
                 let cx, cy;
                 if (pos.mode === 'hwall') {
                     cx = padding + pos.col * cellSize + cellSize;
-                    cy = padding + (dispWallRow(pos.row) + 1) * cellSize
+                    cy = padding + (pos.row + 1) * cellSize
                 } else {
                     cx = padding + (pos.col + 1) * cellSize;
-                    cy = padding + dispWallRow(pos.row) * cellSize + cellSize
+                    cy = padding + pos.row * cellSize + cellSize
                 }
                 let screenX = (canvasRect.left - wrapperRect.left) + cx * scaleX;
                 let screenY = (canvasRect.top - wrapperRect.top) + cy * scaleY;
@@ -3789,7 +3765,7 @@
                 if (uiMode === 'hwall') {
                     let lineIdx = Math.round(y / cellSize);
                     if (lineIdx < 1 || lineIdx > 8) return null;
-                    let row = dispWallRow(lineIdx - 1);
+                    let row = lineIdx - 1;
                     let col = Math.floor(x / cellSize);
                     if (col < 0 || col > 7) return null;
                     return { row, col, mode: 'hwall' }
@@ -3797,7 +3773,7 @@
                     let lineIdx = Math.round(x / cellSize);
                     if (lineIdx < 1 || lineIdx > 8) return null;
                     let col = lineIdx - 1;
-                    let row = dispWallRow(Math.floor(y / cellSize));
+                    let row = Math.floor(y / cellSize);
                     if (row < 0 || row > 7) return null;
                     return { row, col, mode: 'vwall' }
                 }
@@ -3838,7 +3814,7 @@
                     const pos = getCellFromEvent(e);
                     if (!pos) return;
                     let col = Math.floor(pos.x / cellSize);
-                    let row = dispRow(Math.floor(pos.y / cellSize));
+                    let row = Math.floor(pos.y / cellSize);
                     executeMove(row, col)
                 } else {
                     handleWallTap(e)
@@ -3878,7 +3854,7 @@
                     const pos = getCellFromEvent(touch);
                     if (!pos) return;
                     let col = Math.floor(pos.x / cellSize);
-                    let row = dispRow(Math.floor(pos.y / cellSize));
+                    let row = Math.floor(pos.y / cellSize);
                     executeMove(row, col)
                 } else {
                     handleWallTap(touch, offsetX, offsetY)
