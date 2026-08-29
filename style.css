@@ -3440,11 +3440,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-main)
+    color: var(--text-main);
+    overflow: hidden;
+    border-radius: 8px
 }
 .hunter-role-icon svg {
     width: 100%;
     height: 100%
+}
+.hunter-role-icon img.role-icon-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block
 }
 .hunter-role-icon.icon-escaper {
     color: #2ecc71
@@ -3472,6 +3480,13 @@
     width: 13px;
     height: 13px;
     flex-shrink: 0
+}
+.role-live-badge img.role-icon-img {
+    width: 15px;
+    height: 15px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 3px
 }
 .role-live-badge.role-escaper {
     color: #2ecc71
@@ -3546,7 +3561,14 @@
     align-items: center;
     justify-content: center;
     font-size: 34px;
-    line-height: 1
+    line-height: 1;
+    overflow: hidden
+}
+.hunter-reveal-icon img.role-icon-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block
 }
 .hunter-reveal-icon.shuffling {
     animation: hunterRevealShuffle 0.28s ease-in-out infinite

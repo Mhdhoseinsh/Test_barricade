@@ -1316,11 +1316,11 @@
                 if (el) el.style.setProperty('--pct', Math.max(0, Math.min(100, (secs / onlineLobby.totalSeconds) * 100)))
             }
 
-            // Small line-icon set for the two Wolf & Sheep roles — used in the
+            // Small icon set for the two Wolf & Sheep roles — used in the
             // role-pick buttons, the live pick badges, and the lottery reveal.
             const ROLE_ICON_SVG = {
-                escaper: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
-                hunter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>'
+                escaper: '<img src="sheep.webp" alt="Sheep" class="role-icon-img">',
+                hunter: '<img src="wolf.webp" alt="Wolf" class="role-icon-img">'
             };
 
             function roleBadgeHTML(role) {
