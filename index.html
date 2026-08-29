@@ -505,7 +505,40 @@
                     <span class="forfeit-badge" id="forfeit-badge-online-opp3" style="display:none">—</span>
                 </div>
             </div>
+            <div id="role-choice-box" class="player-setup-card" style="display:none">
+                <div id="role-choice-title" style="font-weight:700;font-size:14px;text-align:center;margin-bottom:10px;">Pick your role</div>
+                <div class="role-choice-row">
+                    <button type="button" id="role-choice-btn-escaper" class="role-choice-btn role-choice-escaper">
+                        <span class="role-choice-icon">🏃</span>
+                        <span id="role-choice-btn-escaper-label">Survivor</span>
+                    </button>
+                    <button type="button" id="role-choice-btn-hunter" class="role-choice-btn role-choice-hunter">
+                        <span class="role-choice-icon">🐺</span>
+                        <span id="role-choice-btn-hunter-label">Hunter</span>
+                    </button>
+                </div>
+                <p id="role-choice-opp-status" style="display:none;color:var(--text-muted);font-size:12px;text-align:center;margin-top:8px;"></p>
+            </div>
             <p id="online-lobby-hint" style="color:var(--text-muted);font-size:12px;text-align:center;margin-top:2px;">You can only change your own name and color</p>
+        </div>
+    </div>
+
+    <div id="hunter-role-draw-overlay" class="hunter-role-draw-overlay">
+        <div class="hrd-card">
+            <h2 id="hrd-title">Role Draw</h2>
+            <div class="hrd-row">
+                <div class="hrd-slot" id="hrd-slot-me">
+                    <div class="hrd-icon" id="hrd-icon-me">❓</div>
+                    <div class="hrd-name" id="hrd-you">You</div>
+                    <div class="hrd-label" id="hrd-label-me"></div>
+                </div>
+                <div class="hrd-vs">VS</div>
+                <div class="hrd-slot" id="hrd-slot-opp">
+                    <div class="hrd-icon" id="hrd-icon-opp">❓</div>
+                    <div class="hrd-name" id="hrd-opp">Opponent</div>
+                    <div class="hrd-label" id="hrd-label-opp"></div>
+                </div>
+            </div>
         </div>
     </div>
 

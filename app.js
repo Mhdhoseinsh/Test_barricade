@@ -320,7 +320,7 @@
                     settingsSoundLabel: 'Sound Effects',
                     settingsSoundDesc: 'Enable or mute in-game sounds',
                     onlineLobbyTitle: 'Set Name & Avatar',
-                    onlineLobbyDesc: 'You have up to 15 seconds to set your name and avatar color',
+                    onlineLobbyDesc: 'You have up to {n} seconds to set your name and avatar color',
                     onlineLobbyHint: 'You can only change your own name and color',
                     rematchAcceptLabel: "Accept Opponent's Rematch",
                     rematchWaitingLabel: 'Waiting for opponent...',
@@ -336,7 +336,13 @@
                     timerUnitMin: 'min',
                     timerNoneLabel: 'No timer',
                     onlineCodeEntryLabel: 'Join with Code',
-                    timeUpToast: "{name}'s time ran out — turn forfeited"
+                    timeUpToast: "{name}'s time ran out — turn forfeited",
+                    roleChoosePrompt: 'Pick your role',
+                    roleOpponentPicked: 'Opponent has chosen',
+                    roleDeterminingWait: 'Determining roles...',
+                    roleDrawTitle: 'Role Draw',
+                    roleDrawYou: 'You',
+                    roleDrawOpponent: 'Opponent'
                 },
                 fa: {
                     pageTitle: 'مسیر ۹ - حالت تیره',
@@ -470,7 +476,7 @@
                     settingsSoundLabel: 'جلوه‌های صوتی',
                     settingsSoundDesc: 'فعال یا بی‌صدا کردن صدای بازی',
                     onlineLobbyTitle: 'تنظیم اسم و آواتار',
-                    onlineLobbyDesc: 'تا ۱۵ ثانیه فرصت داری اسم و رنگ آواتار خودت را تنظیم کنی',
+                    onlineLobbyDesc: 'تا {n} ثانیه فرصت داری اسم و رنگ آواتار خودت را تنظیم کنی',
                     onlineLobbyHint: 'فقط می‌توانی اسم و رنگ خودت را تغییر بدهی',
                     rematchAcceptLabel: 'قبول بازی دوباره حریف',
                     rematchWaitingLabel: 'در انتظار پاسخ حریف...',
@@ -486,7 +492,13 @@
                     timerUnitMin: 'دقیقه',
                     timerNoneLabel: 'بدون تایمر',
                     onlineCodeEntryLabel: 'پیوستن با کد',
-                    timeUpToast: 'وقت {name} تمام شد و نوبتش از دست رفت'
+                    timeUpToast: 'وقت {name} تمام شد و نوبتش از دست رفت',
+                    roleChoosePrompt: 'نقش خودت را انتخاب کن',
+                    roleOpponentPicked: 'حریف نقشش را انتخاب کرد',
+                    roleDeterminingWait: 'در حال تعیین نقش‌ها...',
+                    roleDrawTitle: 'قرعه‌کشی نقش‌ها',
+                    roleDrawYou: 'تو',
+                    roleDrawOpponent: 'حریف'
                 }
             };
             let currentLang = localStorage.getItem('barricade-lang') || 'fa';
@@ -698,14 +710,24 @@
                 requestedByOpponent: !1
             };
 
-            const ONLINE_LOBBY_SECONDS = 15;
+            const ONLINE_LOBBY_SECONDS_DEFAULT = 18;
+            const ONLINE_LOBBY_SECONDS_HUNTER = 27;
+            function onlineLobbySecondsForMode(mode) {
+                return mode === 'hunter' ? ONLINE_LOBBY_SECONDS_HUNTER : ONLINE_LOBBY_SECONDS_DEFAULT
+            }
             const onlineLobby = {
                 me: { name: '', color: '#E74C3C' },
                 othersById: {},
                 mySlot: 'p1',
                 timer: null,
-                secondsLeft: ONLINE_LOBBY_SECONDS,
-                deadline: null
+                totalSeconds: ONLINE_LOBBY_SECONDS_DEFAULT,
+                secondsLeft: ONLINE_LOBBY_SECONDS_DEFAULT,
+                deadline: null,
+                myRole: null,
+                oppRole: null,
+                roleResult: null,
+                roleResolved: false,
+                awaitingRoleResult: false
             };
 
             function genRoomCode() {
@@ -999,6 +1021,15 @@
                         const pid = (data.id !== undefined) ? data.id : (onlineState.localPlayerId === 0 ? 1 : 0);
                         onlineLobby.othersById[pid] = { name: (data.name || '').slice(0, 13), color: data.color || customColor(slotNameForId(onlineState.mode, pid)) };
                         updateOnlineOppUI()
+                    } else if (data.type === 'role-pick') {
+                        onlineLobby.oppRole = data.role;
+                        updateRoleChoiceOppIndicator()
+                    } else if (data.type === 'role-result') {
+                        onlineLobby.roleResult = { escaperId: data.escaperId, hunterId: data.hunterId, needsDraw: !!data.needsDraw };
+                        if (onlineLobby.awaitingRoleResult) {
+                            onlineLobby.awaitingRoleResult = !1;
+                            applyHunterRoleResult(onlineLobby.roleResult)
+                        }
                     } else if (data.type === 'timer-sync') {
                         // Authoritative deadline from whichever device's player
                         // just started their turn — replaces our own
@@ -1393,7 +1424,7 @@
                 const numEl = document.getElementById('online-lobby-countdown-num');
                 const secs = Math.max(0, onlineLobby.secondsLeft);
                 if (numEl) numEl.textContent = localizeNum(secs);
-                if (el) el.style.setProperty('--pct', Math.max(0, Math.min(100, (secs / ONLINE_LOBBY_SECONDS) * 100)))
+                if (el) el.style.setProperty('--pct', Math.max(0, Math.min(100, (secs / onlineLobby.totalSeconds) * 100)))
             }
 
             function showOnlineLobby(mode) {
@@ -1421,14 +1452,23 @@
                 refreshOnlineLobbySwatchUI();
                 updateOnlineOppUI();
                 broadcastOnlineProfile();
-                onlineLobby.secondsLeft = ONLINE_LOBBY_SECONDS;
+                onlineLobby.myRole = null;
+                onlineLobby.oppRole = null;
+                onlineLobby.roleResult = null;
+                onlineLobby.roleResolved = false;
+                onlineLobby.awaitingRoleResult = false;
+                setupRoleChoiceUI(mode);
+                const totalSecs = onlineLobbySecondsForMode(mode);
+                onlineLobby.totalSeconds = totalSecs;
+                onlineLobby.secondsLeft = totalSecs;
+                setTextContent('online-lobby-desc', fmt(t('onlineLobbyDesc'), { n: totalSecs }));
                 // Deadline-based, same reasoning as the in-game turn timer: each
                 // player's browser starts this lobby countdown at a slightly
                 // different real moment (network delay in receiving "start"),
                 // and a plain "subtract 1 every 1000ms" timer drifts further
                 // from there. Anchoring to a fixed real-world deadline keeps it
                 // accurate and keeps both players landing in the game together.
-                onlineLobby.deadline = Date.now() + ONLINE_LOBBY_SECONDS * 1000;
+                onlineLobby.deadline = Date.now() + totalSecs * 1000;
                 updateOnlineCountdownUI();
                 if (onlineLobby.timer) clearInterval(onlineLobby.timer);
                 onlineLobby.timer = setInterval(tickOnlineLobbyCountdown, 250)
@@ -1446,10 +1486,8 @@
                 }
             }
 
-            function finalizeOnlineLobby(mode) {
-                const lobbyView = document.getElementById('online-lobby-view');
-                if (lobbyView) lobbyView.style.display = 'none';
-                initGame(mode);
+            function applyOnlineIdentities() {
+                if (!onlineState.active) return;
                 const meP = players.find(p => p.id === onlineState.localPlayerId);
                 if (meP) {
                     meP.customName = onlineLobby.me.name;
@@ -1464,11 +1502,173 @@
                         p.color = data.color
                     }
                 }
+            }
+
+            function finalizeOnlineLobby(mode) {
+                if (mode === 'hunter') { resolveHunterRoles(); return }
+                const lobbyView = document.getElementById('online-lobby-view');
+                if (lobbyView) lobbyView.style.display = 'none';
+                initGame(mode);
+                applyOnlineIdentities();
                 renderTopbar();
                 updateScores();
                 updateActivePlayerUI();
                 draw()
             }
+
+            // ================= HUNTER MODE ROLE PICK / DRAW =================
+            function setupRoleChoiceUI(mode) {
+                const box = document.getElementById('role-choice-box');
+                if (!box) return;
+                box.style.display = mode === 'hunter' ? 'block' : 'none';
+                if (mode !== 'hunter') return;
+                setTextContent('role-choice-title', t('roleChoosePrompt'));
+                setTextContent('role-choice-btn-escaper-label', t('roleEscaper'));
+                setTextContent('role-choice-btn-hunter-label', t('roleHunter'));
+                const btnEsc = document.getElementById('role-choice-btn-escaper');
+                const btnHun = document.getElementById('role-choice-btn-hunter');
+                if (btnEsc) btnEsc.classList.remove('selected');
+                if (btnHun) btnHun.classList.remove('selected');
+                updateRoleChoiceOppIndicator()
+            }
+
+            function pickHunterRole(role) {
+                onlineLobby.myRole = role;
+                const btnEsc = document.getElementById('role-choice-btn-escaper');
+                const btnHun = document.getElementById('role-choice-btn-hunter');
+                if (btnEsc) btnEsc.classList.toggle('selected', role === 'escaper');
+                if (btnHun) btnHun.classList.toggle('selected', role === 'hunter');
+                sfxClick();
+                sendOnline({ type: 'role-pick', role })
+            }
+            document.getElementById('role-choice-btn-escaper').onclick = () => pickHunterRole('escaper');
+            document.getElementById('role-choice-btn-hunter').onclick = () => pickHunterRole('hunter');
+
+            function updateRoleChoiceOppIndicator() {
+                const el = document.getElementById('role-choice-opp-status');
+                if (!el) return;
+                el.style.display = onlineLobby.oppRole ? 'block' : 'none';
+                setTextContent('role-choice-opp-status', t('roleOpponentPicked'))
+            }
+
+            function resolveHunterRoles() {
+                if (onlineLobby.roleResolved) return;
+                if (onlineState.isHost) {
+                    computeAndBroadcastHunterRoles()
+                } else if (onlineLobby.roleResult) {
+                    applyHunterRoleResult(onlineLobby.roleResult)
+                } else {
+                    onlineLobby.awaitingRoleResult = !0;
+                    showRoleWaitingState();
+                    setTimeout(() => {
+                        if (!onlineLobby.roleResolved && onlineLobby.awaitingRoleResult) {
+                            onlineLobby.awaitingRoleResult = !1;
+                            const escaperId = Math.random() < .5 ? 0 : 1;
+                            applyHunterRoleResult({ escaperId, hunterId: escaperId === 0 ? 1 : 0, needsDraw: !0 })
+                        }
+                    }, 4000)
+                }
+            }
+
+            function showRoleWaitingState() {
+                const el = document.getElementById('role-choice-opp-status');
+                if (el) { el.style.display = 'block'; setTextContent('role-choice-opp-status', t('roleDeterminingWait')) }
+            }
+
+            function computeAndBroadcastHunterRoles() {
+                const myId = onlineState.localPlayerId;
+                const oppId = myId === 0 ? 1 : 0;
+                const myChoice = onlineLobby.myRole;
+                const oppChoice = onlineLobby.oppRole;
+                let escaperId, needsDraw;
+                if (myChoice && oppChoice && myChoice !== oppChoice) {
+                    escaperId = myChoice === 'escaper' ? myId : oppId;
+                    needsDraw = !1
+                } else {
+                    escaperId = Math.random() < .5 ? 0 : 1;
+                    needsDraw = !0
+                }
+                const result = { escaperId, hunterId: escaperId === 0 ? 1 : 0, needsDraw };
+                sendOnline({ type: 'role-result', escaperId: result.escaperId, hunterId: result.hunterId, needsDraw: result.needsDraw });
+                applyHunterRoleResult(result)
+            }
+
+            function applyHunterRoleResult(result) {
+                if (onlineLobby.roleResolved) return;
+                onlineLobby.roleResolved = !0;
+                hunterRoleAssignment = {
+                    0: result.escaperId === 0 ? 'escaper' : 'hunter',
+                    1: result.escaperId === 1 ? 'escaper' : 'hunter'
+                };
+                const proceed = () => {
+                    const lobbyView = document.getElementById('online-lobby-view');
+                    if (lobbyView) lobbyView.style.display = 'none';
+                    initGame('hunter');
+                    applyOnlineIdentities();
+                    renderTopbar();
+                    updateScores();
+                    updateActivePlayerUI();
+                    draw()
+                };
+                if (result.needsDraw) {
+                    playHunterRoleDrawAnimation(result, proceed)
+                } else {
+                    proceed()
+                }
+            }
+
+            function playHunterRoleDrawAnimation(result, onDone) {
+                const overlay = document.getElementById('hunter-role-draw-overlay');
+                if (!overlay) { onDone(); return }
+                const myId = onlineState.localPlayerId;
+                const myRole = result.escaperId === myId ? 'escaper' : 'hunter';
+                const oppRole = myRole === 'escaper' ? 'hunter' : 'escaper';
+                const meIcon = document.getElementById('hrd-icon-me');
+                const oppIcon = document.getElementById('hrd-icon-opp');
+                const meLabel = document.getElementById('hrd-label-me');
+                const oppLabel = document.getElementById('hrd-label-opp');
+                const meSlot = document.getElementById('hrd-slot-me');
+                const oppSlot = document.getElementById('hrd-slot-opp');
+                const ICONS = { escaper: '🏃', hunter: '🐺' };
+                setTextContent('hrd-title', t('roleDrawTitle'));
+                setTextContent('hrd-you', t('roleDrawYou'));
+                setTextContent('hrd-opp', t('roleDrawOpponent'));
+                meLabel.textContent = '';
+                oppLabel.textContent = '';
+                meSlot.classList.remove('locked', 'role-escaper', 'role-hunter');
+                oppSlot.classList.remove('locked', 'role-escaper', 'role-hunter');
+                overlay.classList.add('visible');
+                let tick = 0;
+                let delay = 80;
+                const totalDuration = 1700;
+                const startTime = Date.now();
+                function step() {
+                    const spin = Math.random() < .5 ? 'escaper' : 'hunter';
+                    meIcon.textContent = ICONS[spin];
+                    oppIcon.textContent = ICONS[spin === 'escaper' ? 'hunter' : 'escaper'];
+                    sfxClick();
+                    tick++;
+                    const elapsed = Date.now() - startTime;
+                    delay = 80 + Math.pow(elapsed / totalDuration, 2) * 220;
+                    if (elapsed < totalDuration) {
+                        setTimeout(step, delay)
+                    } else {
+                        meIcon.textContent = ICONS[myRole];
+                        oppIcon.textContent = ICONS[oppRole];
+                        meLabel.textContent = t(myRole === 'escaper' ? 'roleEscaper' : 'roleHunter');
+                        oppLabel.textContent = t(oppRole === 'escaper' ? 'roleEscaper' : 'roleHunter');
+                        meSlot.classList.add('locked', 'role-' + myRole);
+                        oppSlot.classList.add('locked', 'role-' + oppRole);
+                        sfxWin();
+                        setTimeout(() => {
+                            overlay.classList.remove('visible');
+                            onDone()
+                        }, 1100)
+                    }
+                }
+                step()
+            }
+            // ================= END HUNTER MODE ROLE PICK / DRAW =================
             // ================= END ONLINE LOBBY =================
 
             function setLanguage(lang) {
@@ -1592,8 +1792,11 @@
                 setTextContent('btn-name-confirm', t('startGameBtn'));
                 setTextContent('btn-name-back', t('backBtn'));
                 setTextContent('online-lobby-title', t('onlineLobbyTitle'));
-                setTextContent('online-lobby-desc', t('onlineLobbyDesc'));
+                setTextContent('online-lobby-desc', fmt(t('onlineLobbyDesc'), { n: onlineLobby.totalSeconds || ONLINE_LOBBY_SECONDS_DEFAULT }));
                 setTextContent('online-lobby-hint', t('onlineLobbyHint'));
+                setTextContent('role-choice-title', t('roleChoosePrompt'));
+                setTextContent('role-choice-btn-escaper-label', t('roleEscaper'));
+                setTextContent('role-choice-btn-hunter-label', t('roleHunter'));
                 setTextContent('mode-title', t('modeTitle'));
                 const dpn = translations[currentLang].defaultPlayerNames;
                 const ph = (id, idx) => {
@@ -2121,9 +2324,13 @@
                 turnOrder = [0, 2, 1, 3]
             }
 
+            let hunterRoleAssignment = { 0: 'escaper', 1: 'hunter' };
             function setupHunter() {
+                if (!onlineState.active) hunterRoleAssignment = { 0: 'escaper', 1: 'hunter' };
+                const escaperId = hunterRoleAssignment[0] === 'escaper' ? 0 : 1;
+                const hunterId = escaperId === 0 ? 1 : 0;
                 players = [{
-                    id: 0,
+                    id: escaperId,
                     name: 'Escaper',
                     customName: currentNames.escaper,
                     color: customColor('escaper'),
@@ -2137,7 +2344,7 @@
                     finished: !1,
                     role: 'escaper'
                 }, {
-                    id: 1,
+                    id: hunterId,
                     name: 'Hunter',
                     customName: currentNames.hunter,
                     color: customColor('hunter'),
@@ -2151,7 +2358,7 @@
                     finished: !1,
                     role: 'hunter'
                 }, ];
-                turnOrder = [0, 1]
+                turnOrder = [escaperId, hunterId]
             }
 
             function getDefaultPlayerName(p) {
@@ -3465,7 +3672,14 @@
             function restartSameGame() {
                 hideGameOverOverlay();
                 resetOnlineRematchState();
-                initGame(gameMode)
+                initGame(gameMode);
+                if (onlineState.active) {
+                    applyOnlineIdentities();
+                    renderTopbar();
+                    updateScores();
+                    updateActivePlayerUI();
+                    draw()
+                }
             }
 
             function goHome() {
