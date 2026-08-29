@@ -2548,143 +2548,6 @@
         .ios-toggle.on .ios-toggle-knob {
             transform: translateX(20px)
         }
-        .role-choice-row {
-            display: flex;
-            gap: 10px
-        }
-        .role-choice-btn {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            padding: 12px 8px;
-            border-radius: 14px;
-            border: 2px solid var(--border-color);
-            background: #0c1015;
-            color: var(--text-color, #fff);
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), border-color .18s ease, box-shadow .18s ease, background .18s ease
-        }
-        .role-choice-btn .role-choice-icon {
-            font-size: 26px;
-            line-height: 1
-        }
-        .role-choice-btn:active {
-            transform: scale(.95)
-        }
-        .role-choice-btn.selected {
-            transform: scale(1.05);
-            box-shadow: 0 0 0 3px rgb(255 255 255/.12), 0 0 16px rgb(255 255 255/.18)
-        }
-        .role-choice-btn.role-choice-escaper.selected {
-            border-color: #3498DB;
-            background: rgba(52, 152, 219, .16)
-        }
-        .role-choice-btn.role-choice-hunter.selected {
-            border-color: #E74C3C;
-            background: rgba(231, 76, 60, .16)
-        }
-        .hunter-role-draw-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgb(5 8 12 / .92);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 340;
-            padding: 20px
-        }
-        .hunter-role-draw-overlay.visible {
-            display: flex
-        }
-        .hrd-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 26px 20px;
-            text-align: center;
-            max-width: 360px;
-            width: 100%;
-            animation: hrdCardIn .3s cubic-bezier(.34, 1.56, .64, 1) both
-        }
-        @keyframes hrdCardIn {
-            from { opacity: 0; transform: scale(.9) }
-            to { opacity: 1; transform: scale(1) }
-        }
-        #hrd-title {
-            margin: 0 0 20px;
-            font-size: 18px;
-            font-weight: 800;
-            color: #fff
-        }
-        .hrd-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px
-        }
-        .hrd-vs {
-            font-weight: 800;
-            font-size: 13px;
-            color: var(--text-muted)
-        }
-        .hrd-slot {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            padding: 16px 10px;
-            border-radius: 16px;
-            border: 2px solid var(--border-color);
-            background: #0c1015;
-            min-width: 110px;
-            transition: border-color .3s ease, box-shadow .3s ease, background .3s ease
-        }
-        .hrd-icon {
-            font-size: 40px;
-            line-height: 1;
-            animation: hrdSpin .18s ease-in-out infinite alternate
-        }
-        .hrd-slot.locked .hrd-icon {
-            animation: hrdLockPop .4s cubic-bezier(.34, 1.56, .64, 1) both
-        }
-        @keyframes hrdSpin {
-            from { transform: scale(1) rotate(-4deg) }
-            to { transform: scale(1.12) rotate(4deg) }
-        }
-        @keyframes hrdLockPop {
-            0% { transform: scale(.6) rotate(0deg) }
-            60% { transform: scale(1.25) rotate(8deg) }
-            100% { transform: scale(1) rotate(0deg) }
-        }
-        .hrd-name {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-weight: 700
-        }
-        .hrd-label {
-            font-size: 14px;
-            font-weight: 800;
-            min-height: 18px;
-            color: #fff
-        }
-        .hrd-slot.locked.role-escaper {
-            border-color: #3498DB;
-            background: rgba(52, 152, 219, .16);
-            box-shadow: 0 0 22px rgba(52, 152, 219, .45)
-        }
-        .hrd-slot.locked.role-hunter {
-            border-color: #E74C3C;
-            background: rgba(231, 76, 60, .16);
-            box-shadow: 0 0 22px rgba(231, 76, 60, .45)
-        }
         #game-over-overlay {
             position: fixed;
             top: 0;
@@ -3511,3 +3374,161 @@
                 max-width: 56px
             }
         }
+
+/* ================= HUNTER ROLE PICK (online Wolf & Sheep lobby) ================= */
+.hunter-role-pick {
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color)
+}
+.hunter-role-pick-label {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 10px
+}
+.hunter-role-options {
+    display: flex;
+    gap: 10px;
+    justify-content: center
+}
+.hunter-role-btn {
+    flex: 1;
+    max-width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 10px;
+    border-radius: 14px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--border-color);
+    color: var(--text-main);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.18s ease
+}
+.hunter-role-btn:active {
+    transform: scale(.96)
+}
+.hunter-role-btn.selected {
+    border-color: #2ecc71;
+    background: rgba(46, 204, 113, .12);
+    box-shadow: 0 0 0 2px rgba(46, 204, 113, .25)
+}
+.hunter-role-icon {
+    font-size: 26px;
+    line-height: 1
+}
+.hunter-role-btn-label {
+    font-size: 12.5px;
+    font-weight: 700
+}
+.hunter-role-pick-status {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin: 10px 0 0
+}
+
+/* ================= HUNTER ROLE LOTTERY REVEAL ================= */
+#hunter-role-reveal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgb(5 8 12 / .86);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 400;
+    padding: 20px
+}
+#hunter-role-reveal-overlay.visible {
+    display: flex
+}
+.hunter-reveal-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 26px 22px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 40px rgb(0 0 0 / .6);
+    animation: startPop 0.28s ease
+}
+.hunter-reveal-card h2 {
+    margin: 0 0 6px;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-main)
+}
+.hunter-reveal-card p {
+    margin: 0 0 20px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.6
+}
+.hunter-reveal-slots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px
+}
+.hunter-reveal-slot {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px
+}
+.hunter-reveal-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .04);
+    border: 1.5px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    line-height: 1
+}
+.hunter-reveal-icon.shuffling {
+    animation: hunterRevealShuffle 0.28s ease-in-out infinite
+}
+.hunter-reveal-icon.landed {
+    animation: hunterRevealLand 0.5s ease;
+    border-color: #2ecc71;
+    box-shadow: 0 0 18px rgba(46, 204, 113, .45)
+}
+.hunter-reveal-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-main);
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+.hunter-reveal-role {
+    font-size: 12px;
+    font-weight: 800;
+    color: #2ecc71;
+    min-height: 15px
+}
+.hunter-reveal-vs {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-muted)
+}
+@keyframes hunterRevealShuffle {
+    0%, 100% { transform: scale(1) rotate(0deg) }
+    50% { transform: scale(1.08) rotate(-4deg) }
+}
+@keyframes hunterRevealLand {
+    0% { transform: scale(1.35) }
+    60% { transform: scale(0.92) }
+    100% { transform: scale(1) }
+}
