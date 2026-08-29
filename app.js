@@ -663,6 +663,21 @@
                 return !!p && p.id === onlineState.localPlayerId
             }
 
+            // ===== Online-only board perspective: always show *my* pawn starting
+            // at the bottom of *my own* screen, regardless of which side I was
+            // actually assigned. Purely visual (CSS rotate of the canvas +
+            // inverted input mapping) — does not touch row/col game state, the
+            // network protocol, or any rule/logic. Offline modes are untouched.
+            function isBoardFlippedForMe() {
+                if (!onlineState.active) return !1;
+                const me = players.find(p => p.id === onlineState.localPlayerId);
+                return !!me && me.target === 'row8'
+            }
+
+            function updateBoardOrientation() {
+                canvas.classList.toggle('board-flipped', isBoardFlippedForMe())
+            }
+
             document.getElementById('btn-start-online').onclick = () => {
                 onlineEntryFromNameEntry = false;
                 document.getElementById('mode-select-view').style.display = 'none';
@@ -2231,6 +2246,7 @@
                 updateScores();
                 updateActivePlayerUI();
                 updateHistory();
+                updateBoardOrientation();
                 draw();
                 startOverlay.style.display = 'none';
                 appEl.classList.add('visible');
@@ -3701,6 +3717,10 @@
                     cx = padding + (pos.col + 1) * cellSize;
                     cy = padding + pos.row * cellSize + cellSize
                 }
+                if (isBoardFlippedForMe()) {
+                    cx = canvas.width - cx;
+                    cy = canvas.height - cy
+                }
                 let screenX = (canvasRect.left - wrapperRect.left) + cx * scaleX;
                 let screenY = (canvasRect.top - wrapperRect.top) + cy * scaleY;
 
@@ -3751,8 +3771,17 @@
                 const scaleY = canvas.height / rect.height;
                 const clientX = e.clientX - (offsetX || 0);
                 const clientY = e.clientY - (offsetY || 0);
-                let x = (clientX - rect.left) * scaleX - padding;
-                let y = (clientY - rect.top) * scaleY - padding;
+                let rawX = (clientX - rect.left) * scaleX;
+                let rawY = (clientY - rect.top) * scaleY;
+                if (isBoardFlippedForMe()) {
+                    // Canvas is visually rotated 180deg for this player, so map
+                    // the screen point back into the underlying (unrotated)
+                    // canvas coordinate space before doing any row/col math.
+                    rawX = canvas.width - rawX;
+                    rawY = canvas.height - rawY
+                }
+                let x = rawX - padding;
+                let y = rawY - padding;
                 if (x < 0 || y < 0 || x > 9 * cellSize || y > 9 * cellSize) return null;
                 return { x, y }
             }
