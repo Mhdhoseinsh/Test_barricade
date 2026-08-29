@@ -315,16 +315,13 @@
                     confirmResignNo: 'Keep Playing',
                     settingsBtn: 'Settings',
                     settingsTitle: 'Settings',
-                    settingsLangLabel: 'Language',
-                    settingsLangDesc: 'Choose the app language',
                     settingsSoundLabel: 'Sound Effects',
                     settingsSoundDesc: 'Enable or mute in-game sounds',
                     onlineLobbyTitle: 'Set Name & Avatar',
                     onlineLobbyDesc: 'You have up to {n} seconds to set your name and avatar color',
                     onlineLobbyHint: 'You can only change your own name and color',
                     hunterPickLabel: 'Pick your role',
-                    hunterPickOppWaiting: "Opponent hasn't chosen yet",
-                    hunterPickOppReady: 'Opponent has chosen',
+                    hunterPickPending: 'Not chosen yet',
                     hunterRevealTitle: 'Role Lottery',
                     hunterRevealSub: "You both picked the same role — flipping a coin to decide!",
                     rematchAcceptLabel: "Accept Opponent's Rematch",
@@ -342,188 +339,17 @@
                     timerNoneLabel: 'No timer',
                     onlineCodeEntryLabel: 'Join with Code',
                     timeUpToast: "{name}'s time ran out — turn forfeited"
-                },
-                fa: {
-                    pageTitle: 'مسیر ۹ - حالت تیره',
-                    modeTitle: 'مسیر ۹',
-                    aboutBtn: 'درباره ما',
-                    soundOn: 'صدا',
-                    soundOff: 'بی‌صدا',
-                    shakeToShowHint: 'برای بازگرداندن آیکون، روی نقطهٔ کوچک ضربه بزنید',
-                    langBtn: 'English',
-                    aboutTitle: 'درباره ما',
-                    aboutTagline: 'استراتژی. دیوار. پیروزی.',
-                    aboutText: 'مسیر ۹ یک بازی فکری آفلاین و نوبتی است که در آن بازیکنان باید زودتر از بقیه به سمت مقابل برسند و در همین حین با گذاشتن دیوار مسیر حریف را کندتر کنند.',
-                    aboutFeature1: 'بدون اینترنت',
-                    aboutFeature2: '۲ تا ۴ نفره',
-                    aboutFeature3: 'استراتژی دیوار',
-                    aboutCreatorLabel: 'سازنده',
-                    aboutCreatorName: 'محمدحسین شمسی',
-                    aboutFollowLabel: 'ما را دنبال کنید',
-                    aboutClose: 'بستن',
-                    startSubtitle: 'مسیر برد از اینجا شروع می‌شود',
-                    howToPlay: 'آموزش بازی',
-                    modeClassicTitle: 'بازی کلاسیک',
-                    modeClassicShort: 'کلاسیک',
-                    modeClassicDesc: 'با گذاشتن دیوار جلوی حریف را بگیر و زودتر به سمت مقابل برس.',
-                    modeClassicBadge: '۲-۴',
-                    pc2Label: 'دو نفره',
-                    pc4Label: 'چهار نفره',
-                    modeOnlineTitle: 'بازی آنلاین',
-                    modeOnlineDesc: 'با یک دوست از راه دور بازی کن؛ یکی اتاق می‌سازد، دیگری با کد وصل می‌شود',
-                    onlineHeroTitle: 'بازی آنلاین',
-                    onlinePick2pLabel: 'کلاسیک ۱ در برابر ۱',
-                    onlinePick4pLabel: 'چهار نفره',
-                    onlinePickHunterLabel: 'شکارچی و فراری',
-                    onlineCreateTitle: 'ساخت اتاق',
-                    onlineCreateDesc: 'یک کد بساز و برای حریف بفرست',
-                    onlineJoinTitle: 'پیوستن با کد',
-                    onlineJoinDesc: 'کد حریف را وارد کن',
-                    onlineBackLabel: 'بازگشت',
-                    onlineCodeHint: 'این کد را برای حریفت بفرست',
-                    onlineCancelLabel: 'لغو',
-                    onlineConnectLabel: 'اتصال',
-                    onlineCopyCodeAria: 'کپی کد',
-                    modeHunterTitle: 'گرگ مقابل میش',
-                    modeHunterDesc: 'یکی فرار می‌کند، یکی شکار می‌کند — برنده کسی است که زودتر برسد.',
-                    move: 'حرکت',
-                    horizontal: 'افقی',
-                    vertical: 'عمودی',
-                    undo: 'واگرد',
-                    repeat: 'تکرار',
-                    resign: 'انصراف',
-                    newGame: 'بازگشت به خانه',
-                    moveHistory: 'تاریخچه حرکات',
-                    startGame: 'یک بازی را شروع کنید',
-                    gameInfo: 'اطلاعات بازی',
-                    mode: 'حالت',
-                    wallsLeft: 'دیوار باقی‌مانده',
-                    status: 'وضعیت',
-                    objective: 'هدف',
-                    walls: 'دیوارها',
-                    wallsText: '• برای انتخاب دیوار، لمس کنید سپس تایید کنید.<br>• هر بازیکن ۱۰ دیوار دارد.',
-                    wallsText4p: '• برای انتخاب دیوار، لمس کنید سپس تایید کنید.<br>• هر بازیکن ۶ دیوار دارد، به‌صورت دو تیم دونفره.',
-                    wallsTextHunter: '• برای انتخاب دیوار، لمس کنید سپس تایید کنید.<br>• بازمانده: ۱۰ دیوار، شکارچی: ۸ دیوار.',
-                    rules: 'قوانین',
-                    rulesText: '• هیچ دیواری نباید مسیر را کاملاً ببندد.<br>• دیوارها نباید هم‌پوشانی داشته یا به‌شکل "+" با هم تلاقی کنند.',
-                    placeWall: 'قرار دادن دیوار',
-                    match: 'مسابقه',
-                    vs: 'مقابل',
-                    gameOver: 'پایان بازی',
-                    turnSuffix: ' نوبت اوست',
-                    mode2p: 'دو نفره',
-                    mode4p: 'چهار نفره',
-                    modeHunter: 'گرگ و میش',
-                    objective2p: 'زودتر از حریف به سمت مقابل برسید.',
-                    objective4p: 'هر دو هم‌تیمی باید زودتر از تیم مقابل به لبه‌ی هدف خود برسند.',
-                    objectiveHunter: '• بازمانده باید به سمت مقابل برسد\n• شکارچی باید با رفتن به خانه بازمانده زودتر اورا شکار کند یا ۷ بار به میش نزدیک شود',
-                    teamA: 'تیم الف',
-                    teamB: 'تیم ب',
-                    players: {
-                        player1: 'بازیکن ۱ (قرمز)',
-                        player2: 'بازیکن ۲ (آبی)',
-                        red: 'قرمز',
-                        blue: 'آبی',
-                        green: 'سبز',
-                        yellow: 'زرد',
-                        hunterRole: 'شکارچی (قرمز)',
-                        escaperRole: 'بازمانده (آبی)'
-                    },
-                    roleHunter: 'شکارچی',
-                    roleEscaper: 'بازمانده',
-                    teamNames: {
-                        0: 'قرمز و آبی',
-                        1: 'سبز و زرد'
-                    },
-                    alertPerpendicular: 'دیوارها نمی‌توانند به‌صورت عمود بر هم تلاقی کنند!',
-                    alertBlocked: 'این دیوار مسیر را کاملاً می‌بندد — مجاز نیست!',
-                    alertWins: '{name} برنده شد!',
-                    alertTeamWins: 'تیم {team} برنده شد!',
-                    confirmResign: '{name} انصراف می‌دهد — بازی تمام شود؟',
-                    resignWinner: '{name} انصراف داد! برنده: {winner}',
-                    resignTeamWinner: '{name} انصراف داد! تیم {team} برنده شد!',
-                    confirmNewGame: 'به خانه بازگردید؟ پیشرفت فعلی از بین می‌رود.',
-                    confirmRepeat: 'همین بازی با همین بازیکنان دوباره تکرار شود؟',
-                    nameEntryTitle: 'اسم بازیکنان را وارد کنید',
-                    startGameBtn: 'شروع بازی',
-                    backBtn: 'بازگشت',
-                    toastNoWalls: 'دیگر دیواری برای گذاشتن ندارید!',
-                    toastWallExists: 'در این محل از قبل دیوار قرار دارد.',
-                    toastInvalidMove: 'نمی‌توانید به آنجا حرکت کنید.',
-                    toastNothingToUndo: 'چیزی برای واگرد کردن وجود ندارد.',
-                    dangerWarning: 'شکارچی درست کنار توست، مراقب باش!',
-                    huntProximityToast: 'نزدیک شدن شکارچی: {n}/۷',
-                    huntProximityWinToast: 'شکارچی ۷ بار فراری را گیر انداخت!',
-                    defaultPlayerNames: ['بازیکن ۱', 'بازیکن ۲', 'بازیکن ۳', 'بازیکن ۴'],
-                    goWinnerLabel: 'برنده',
-                    goTagWinner: 'برنده',
-                    goTagLoser: 'بازنده',
-                    goPlayAgain: 'تکرار بازی',
-                    goBackHome: 'بازگشت به خانه',
-                    confirmYesLabel: 'بله، ادامه بده',
-                    confirmNoLabel: 'انصراف',
-                    confirmHomeYes: 'بله، بازگشت به خانه',
-                    confirmHomeNo: 'ماندن در بازی',
-                    confirmRepeatYes: 'بله، تکرار شود',
-                    confirmRepeatNo: 'انصراف',
-                    confirmResignYes: 'بله، بازی تمام شود',
-                    confirmResignNo: 'ادامه بازی',
-                    settingsBtn: 'تنظیمات',
-                    settingsTitle: 'تنظیمات',
-                    settingsLangLabel: 'زبان',
-                    settingsLangDesc: 'زبان اپلیکیشن را انتخاب کنید',
-                    settingsSoundLabel: 'جلوه‌های صوتی',
-                    settingsSoundDesc: 'فعال یا بی‌صدا کردن صدای بازی',
-                    onlineLobbyTitle: 'تنظیم اسم و آواتار',
-                    onlineLobbyDesc: 'تا {n} ثانیه فرصت داری اسم و رنگ آواتار خودت را تنظیم کنی',
-                    onlineLobbyHint: 'فقط می‌توانی اسم و رنگ خودت را تغییر بدهی',
-                    hunterPickLabel: 'نقشت را انتخاب کن',
-                    hunterPickOppWaiting: 'حریف هنوز انتخاب نکرده',
-                    hunterPickOppReady: 'حریف انتخابش را انجام داد',
-                    hunterRevealTitle: 'قرعه‌کشی نقش',
-                    hunterRevealSub: 'هر دو یک نقش را انتخاب کردید — برای تعیین نقش‌ها قرعه‌کشی می‌کنیم!',
-                    rematchAcceptLabel: 'قبول بازی دوباره حریف',
-                    rematchWaitingLabel: 'در انتظار پاسخ حریف...',
-                    opponentLeftMsg: 'حریف بازی را ترک کرد',
-                    toastRematchRequested: 'حریف درخواست بازی مجدد داد',
-                    gtOfflineLabel: 'آفلاین',
-                    gtOnlineLabel: 'آنلاین',
-                    gtLockHint4p: 'مود چهار نفره فقط به‌صورت آفلاین قابل بازی است',
-                    onlineNameLockTitle: 'اسم و آواتار داخل اتاق تنظیم می‌شود',
-                    onlineNameLockDesc: 'بعد از ساخت یا پیوستن به اتاق، در لابی بازی اسم و رنگ آواتارت را انتخاب می‌کنی.',
-                    timerSelectLabel: 'مجموع زمان هر بازیکن',
-                    timerUnitSec: 'ثانیه',
-                    timerUnitMin: 'دقیقه',
-                    timerNoneLabel: 'بدون تایمر',
-                    onlineCodeEntryLabel: 'پیوستن با کد',
-                    timeUpToast: 'وقت {name} تمام شد و نوبتش از دست رفت'
                 }
             };
-            let currentLang = localStorage.getItem('barricade-lang') || 'fa';
+            // English-only build: language switching has been removed.
+            const currentLang = 'en';
 
             function t(key) {
-                const str = translations[currentLang][key];
-                return (str === undefined) ? translations.en[key] : str
-            }
-
-            function toFaDigits(str) {
-                const map = {
-                    '0': '۰',
-                    '1': '۱',
-                    '2': '۲',
-                    '3': '۳',
-                    '4': '۴',
-                    '5': '۵',
-                    '6': '۶',
-                    '7': '۷',
-                    '8': '۸',
-                    '9': '۹'
-                };
-                return String(str).replace(/[0-9]/g, d => map[d])
+                return translations.en[key]
             }
 
             function localizeNum(n) {
-                return currentLang === 'fa' ? toFaDigits(n) : String(n)
+                return String(n)
             }
 
             function fmt(str, params) {
@@ -1475,17 +1301,45 @@
                 if (el) el.style.setProperty('--pct', Math.max(0, Math.min(100, (secs / onlineLobby.totalSeconds) * 100)))
             }
 
+            // Small line-icon set for the two Wolf & Sheep roles — used in the
+            // role-pick buttons, the live pick badges, and the lottery reveal.
+            const ROLE_ICON_SVG = {
+                escaper: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+                hunter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>'
+            };
+
+            function roleBadgeHTML(role) {
+                if (!role) return '<span class="role-live-badge-pending">' + t('hunterPickPending') + '</span>';
+                return ROLE_ICON_SVG[role] + '<span>' + (role === 'escaper' ? t('roleEscaper') : t('roleHunter')) + '</span>'
+            }
+
             function updateHunterPickUI(mode) {
                 const section = document.getElementById('hunter-role-pick-section');
-                if (!section) return;
-                if (mode !== 'hunter') { section.style.display = 'none'; return }
-                section.style.display = '';
+                const badgeMe = document.getElementById('role-live-badge-me');
+                const badgeOpp = document.getElementById('role-live-badge-opp');
+                if (mode !== 'hunter') {
+                    if (section) section.style.display = 'none';
+                    if (badgeMe) badgeMe.style.display = 'none';
+                    if (badgeOpp) badgeOpp.style.display = 'none';
+                    return
+                }
+                if (section) section.style.display = '';
                 const btnEscaper = document.getElementById('btn-pick-role-escaper');
                 const btnHunter = document.getElementById('btn-pick-role-hunter');
                 if (btnEscaper) btnEscaper.classList.toggle('selected', onlineHunterPick.me === 'escaper');
                 if (btnHunter) btnHunter.classList.toggle('selected', onlineHunterPick.me === 'hunter');
-                const statusEl = document.getElementById('hunter-role-pick-status');
-                if (statusEl) statusEl.textContent = onlineHunterPick.opp ? t('hunterPickOppReady') : t('hunterPickOppWaiting')
+                // Live, just like the name field: shows the actual picked role
+                // for both players in real time, updating instantly whenever
+                // either side taps a different role.
+                const applyBadge = (el, role) => {
+                    if (!el) return;
+                    el.style.display = '';
+                    el.innerHTML = roleBadgeHTML(role);
+                    el.classList.toggle('role-escaper', role === 'escaper');
+                    el.classList.toggle('role-hunter', role === 'hunter')
+                };
+                applyBadge(badgeMe, onlineHunterPick.me);
+                applyBadge(badgeOpp, onlineHunterPick.opp)
             }
 
             function pickHunterRole(role) {
@@ -1594,29 +1448,34 @@
                 const iconOpp = document.getElementById('hunter-reveal-icon-opp');
                 const roleMe = document.getElementById('hunter-reveal-role-me');
                 const roleOpp = document.getElementById('hunter-reveal-role-opp');
-                const ICONS = ['🐑', '🐺'];
                 if (roleMe) roleMe.textContent = '';
                 if (roleOpp) roleOpp.textContent = '';
                 if (iconMe) { iconMe.classList.remove('landed'); iconMe.classList.add('shuffling') }
                 if (iconOpp) { iconOpp.classList.remove('landed'); iconOpp.classList.add('shuffling') }
                 overlay.classList.add('visible');
+                const setIconRole = (el, role) => {
+                    if (!el) return;
+                    el.innerHTML = ROLE_ICON_SVG[role];
+                    el.classList.toggle('icon-escaper', role === 'escaper');
+                    el.classList.toggle('icon-hunter', role === 'hunter')
+                };
                 let tick = 0;
                 const shuffleInterval = setInterval(() => {
                     tick++;
-                    if (iconMe) iconMe.textContent = ICONS[tick % 2];
-                    if (iconOpp) iconOpp.textContent = ICONS[(tick + 1) % 2];
+                    setIconRole(iconMe, tick % 2 === 0 ? 'escaper' : 'hunter');
+                    setIconRole(iconOpp, tick % 2 === 0 ? 'hunter' : 'escaper');
                     sfxClick()
                 }, 90);
                 setTimeout(() => {
                     clearInterval(shuffleInterval);
                     if (iconMe) {
                         iconMe.classList.remove('shuffling');
-                        iconMe.textContent = myRole === 'escaper' ? '🐑' : '🐺';
+                        setIconRole(iconMe, myRole);
                         iconMe.classList.add('landed')
                     }
                     if (iconOpp) {
                         iconOpp.classList.remove('shuffling');
-                        iconOpp.textContent = oppRole === 'escaper' ? '🐑' : '🐺';
+                        setIconRole(iconOpp, oppRole);
                         iconOpp.classList.add('landed')
                     }
                     if (roleMe) roleMe.textContent = myRole === 'escaper' ? t('roleEscaper') : t('roleHunter');
@@ -1655,38 +1514,11 @@
             }
             // ================= END ONLINE LOBBY =================
 
-            function setLanguage(lang) {
-                currentLang = lang;
-                localStorage.setItem('barricade-lang', lang);
-                applyStaticTranslations();
-                if (appEl.classList.contains('visible')) {
-                    renderTopbar();
-                    updateBtnState();
-                    updateScores();
-                    updateActivePlayerUI();
-                    updateHistory();
-                    infoMode.textContent = gameMode === '2p' ? t('mode2p') : (gameMode === '4p' ? t('mode4p') : t('modeHunter'));
-                    infoObjective.innerHTML = (gameMode === '2p' ? t('objective2p') : (gameMode === '4p' ? t('objective4p') : t(
-                        'objectiveHunter'))).replace(/\n/g, '<br>');
-                    // به‌روزرسانی متن دیوارها بر اساس حالت بازی
-                    const wallsTextEl = document.getElementById('info-walls-text');
-                    if (gameMode === 'hunter') {
-                        wallsTextEl.innerHTML = t('wallsTextHunter');
-                    } else if (gameMode === '4p') {
-                        wallsTextEl.innerHTML = t('wallsText4p');
-                    } else {
-                        wallsTextEl.innerHTML = t('wallsText');
-                    }
-                }
-            }
-
             function applyStaticTranslations() {
                 setTextContent('page-title', t('pageTitle'));
                 setTextContent('about-btn-label', t('aboutBtn'));
                 setTextContent('settings-btn-label', t('settingsBtn'));
                 setTextContent('settings-title', t('settingsTitle'));
-                setTextContent('settings-lang-label', t('settingsLangLabel'));
-                setTextContent('settings-lang-desc', t('settingsLangDesc'));
                 setTextContent('settings-sound-label', t('settingsSoundLabel'));
                 setTextContent('settings-sound-desc', t('settingsSoundDesc'));
                 setTextContent('about-title', t('aboutTitle'));
@@ -1797,37 +1629,9 @@
                 ph('input-name-yellow', 3);
                 ph('input-name-hunter', 0);
                 ph('input-name-escaper', 1);
-                document.documentElement.lang = currentLang;
-                document.documentElement.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
-                updateLangSwitch()
+                document.documentElement.lang = 'en';
+                document.documentElement.dir = 'ltr'
             }
-
-            function updateLangSwitch() {
-                const sw = document.getElementById('lang-switch');
-                if (!sw) return;
-                sw.dataset.active = currentLang;
-                const faBtn = document.getElementById('lang-opt-fa'),
-                    enBtn = document.getElementById('lang-opt-en');
-                if (faBtn) faBtn.classList.toggle('active', currentLang === 'fa');
-                if (enBtn) enBtn.classList.toggle('active', currentLang === 'en')
-            }
-            const langOptFa = document.getElementById('lang-opt-fa'),
-                langOptEn = document.getElementById('lang-opt-en');
-            const langLoadingOverlay = document.getElementById('lang-loading-overlay');
-
-            function switchLanguageAnimated(lang) {
-                if (lang === currentLang) return;
-                langLoadingOverlay.classList.add('visible');
-                setTimeout(() => {
-                    setLanguage(lang);
-                    setTimeout(() => {
-                        langLoadingOverlay.classList.remove('visible')
-                    }, 130)
-                }, 570)
-            }
-            if (langOptFa) langOptFa.onclick = () => switchLanguageAnimated('fa');
-            if (langOptEn) langOptEn.onclick = () => switchLanguageAnimated('en');
-            updateLangSwitch();
             document.getElementById('btn-about').onclick = () => document.getElementById('about-overlay').classList.add('visible');
             const btnAboutCloseX = document.getElementById('btn-about-close-x');
             if (btnAboutCloseX) btnAboutCloseX.onclick = () => document.getElementById('about-overlay').classList.remove('visible');

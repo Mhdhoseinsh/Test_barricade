@@ -3418,18 +3418,54 @@
     box-shadow: 0 0 0 2px rgba(46, 204, 113, .25)
 }
 .hunter-role-icon {
-    font-size: 26px;
-    line-height: 1
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main)
+}
+.hunter-role-icon svg {
+    width: 100%;
+    height: 100%
+}
+.hunter-role-icon.icon-escaper {
+    color: #2ecc71
+}
+.hunter-role-icon.icon-hunter {
+    color: #e74c3c
 }
 .hunter-role-btn-label {
     font-size: 12.5px;
     font-weight: 700
 }
-.hunter-role-pick-status {
-    text-align: center;
-    font-size: 11.5px;
+.role-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .07);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap
+}
+.role-live-badge svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0
+}
+.role-live-badge.role-escaper {
+    color: #2ecc71
+}
+.role-live-badge.role-hunter {
+    color: #e74c3c
+}
+.role-live-badge-pending {
     color: var(--text-muted);
-    margin: 10px 0 0
+    font-weight: 600;
+    font-size: 11px
 }
 
 /* ================= HUNTER ROLE LOTTERY REVEAL ================= */
