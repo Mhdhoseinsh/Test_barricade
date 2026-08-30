@@ -645,6 +645,7 @@
                 if (onlineLobby.timer) { clearInterval(onlineLobby.timer); onlineLobby.timer = null }
                 stopTurnTimer();
                 turnTimerPlayerId = null;
+                onlineMsgQueue = [];
                 const lobbyView = document.getElementById('online-lobby-view');
                 if (lobbyView) lobbyView.style.display = 'none';
                 const revealOverlay = document.getElementById('hunter-role-reveal-overlay');
@@ -899,6 +900,32 @@
                 showOnlineLobby(mode)
             }
 
+            // BUGFIX (turn/timer desync in online play): incoming network
+            // messages used to be applied the instant they arrived, even if
+            // *our own* move/capture animation was still playing (isAnimating
+            // === true). Two different failures came from that:
+            //  1) executeMove()/confirmWall() both bail out immediately when
+            //     isAnimating is true — so a 'move' or 'wall' that arrived
+            //     mid-animation was silently DROPPED forever, permanently
+            //     desyncing the two devices' board/turn state (each side then
+            //     shows a different, stuck "whose turn" highlight).
+            //  2) 'timer-sync' was applied with no such guard at all. If it
+            //     arrived before our own animation finished calling
+            //     advanceTurn() locally, it overwrote turnTimerPlayerId to
+            //     the *next* player while `turn` here still pointed at the
+            //     *current* one — so the still-running interval kept ticking
+            //     the wrong player's time bank down using the new deadline,
+            //     and then, once our own advanceTurn() finally did fire, the
+            //     turn-changed check in syncTurnTimer() found turnTimerPlayerId
+            //     already "matching" (by coincidence) and skipped starting a
+            //     fresh timer for the player actually now on turn — which is
+            //     exactly the "active player's clock is frozen, the other
+            //     player's clock is draining" symptom.
+            // Fix: queue any message that arrives while isAnimating is true
+            // and replay the queue, in arrival order, only once our local
+            // animation/turn state has caught up.
+            let onlineMsgQueue = [];
+
             function handleOnlineData(data) {
                 if (!data || !data.type) return;
                 if (data.type === 'start') {
@@ -906,6 +933,14 @@
                     beginOnlineGame(data.mode);
                     return
                 }
+                if (isAnimating) {
+                    onlineMsgQueue.push(data);
+                    return
+                }
+                processOnlineMessage(data)
+            }
+
+            function processOnlineMessage(data) {
                 onlineState.applyingRemote = !0;
                 try {
                     if (data.type === 'move') {
@@ -946,14 +981,36 @@
                         // provisional estimate so both devices count down from
                         // the exact same real-world instant, regardless of the
                         // network delay it took this message to arrive.
-                        turnTimerPlayerId = data.playerId;
-                        turnTimerDeadline = data.deadline;
-                        if (!turnTimerInterval) turnTimerInterval = setInterval(tickTurnTimer, 250);
-                        renderAllPlayerClocks()
+                        // Guard: only apply it once our own `turn` has already
+                        // moved on to that same player. If it hasn't yet (this
+                        // message raced ahead of our local advanceTurn), queue
+                        // it instead of stomping on the currently-running
+                        // player's deadline.
+                        if (!currentPlayer() || currentPlayer().id !== data.playerId) {
+                            onlineMsgQueue.push(data)
+                        } else {
+                            turnTimerPlayerId = data.playerId;
+                            turnTimerDeadline = data.deadline;
+                            stopTurnTimer();
+                            turnTimerInterval = setInterval(tickTurnTimer, 250);
+                            renderAllPlayerClocks()
+                        }
                     }
                 } finally {
                     onlineState.applyingRemote = !1
                 }
+            }
+
+            // Replays one queued message once we're free to process it again.
+            // Only one per call — processing a queued 'move'/'wall' can itself
+            // kick off a new animation, and its own completion will call this
+            // again, so the queue drains naturally in the original arrival
+            // order without deep recursion.
+            function drainOnlineMsgQueue() {
+                if (isAnimating || !onlineState.active) return;
+                if (!onlineMsgQueue.length) return;
+                const next = onlineMsgQueue.shift();
+                processOnlineMessage(next)
             }
             // ================= END ONLINE MULTIPLAYER =================
 
@@ -2231,6 +2288,7 @@
                 gameMode = mode;
                 stopTurnTimer();
                 turnTimerPlayerId = null;
+                onlineMsgQueue = [];
                 if (mode === '2p') setup2P();
                 else if (mode === '4p') setup4P();
                 else setupHunter();
@@ -2868,6 +2926,10 @@
                         animData = null;
                         isAnimating = !1;
                         if (cb) cb();
+                        // Now that our own move/turn state is fully settled,
+                        // apply anything the opponent sent us while we were
+                        // still mid-animation (see handleOnlineData).
+                        drainOnlineMsgQueue();
                         updated = !0
                     } else {
                         draw();
@@ -3241,6 +3303,10 @@
                         isAnimating = !1;
                         draw();
                         if (callback) callback();
+                        // Same reasoning as in loopAnimation(): only replay
+                        // queued opponent messages once our own turn state
+                        // has fully settled after this animation.
+                        drainOnlineMsgQueue();
                         return
                     }
                     requestAnimationFrame(loop)
