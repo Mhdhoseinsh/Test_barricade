@@ -1000,6 +1000,14 @@
                 const timer = { remaining: DISCONNECT_GRACE_SECONDS, intervalId: null };
                 onlineDisconnectTimers[player.id] = timer;
                 updateDisconnectBanner();
+                // اگه دقیقاً نوبتِ همین بازیکنِ قطع‌شده باشه، تایمر نوبتش رو
+                // فریز می‌کنیم (فقط interval رو متوقف می‌کنیم، عدد timeBank
+                // دست‌نخورده می‌مونه) تا در کل این ۳۰ ثانیه‌ی مهلت، از زمان
+                // بازی‌اش چیزی کم نشه. turnTimerPlayerId عمداً پاک نمی‌شه تا
+                // وقتی وصل شد از همون نقطه ادامه پیدا کنه، نه از اول.
+                if (timerIsEnabled() && currentPlayer() && currentPlayer().id === player.id) {
+                    stopTurnTimer()
+                }
                 timer.intervalId = setInterval(() => {
                     timer.remaining -= 1;
                     if (timer.remaining <= 0) {
@@ -1027,7 +1035,14 @@
                             // Came back before the countdown ran out — clear
                             // it and carry on as if nothing happened.
                             clearDisconnectCountdown(p.id);
-                            showToast(fmt(t('disconnectReconnectedToast'), { name: playerDisplayName(p) }))
+                            showToast(fmt(t('disconnectReconnectedToast'), { name: playerDisplayName(p) }));
+                            // اگه تایمر نوبتش به‌خاطر قطعی فریز شده بود (الان
+                            // نوبت خودشه و interval متوقفه)، دقیقاً از همون
+                            // عددی که موقع قطعی متوقف شده بود دوباره راهش
+                            // می‌ندازیم — نه از اول با عدد کامل.
+                            if (timerIsEnabled() && !gameOver && currentPlayer() && currentPlayer().id === p.id && turnTimerPlayerId === p.id && !turnTimerInterval) {
+                                startTurnTimer()
+                            }
                         }
                         continue
                     }
