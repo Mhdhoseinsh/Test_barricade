@@ -244,6 +244,42 @@
             right: auto;
             left: -7px
         }
+        /* Home screen: Online / Offline avatar-style icons — same base
+           "person" glyph used for the room name & avatar hint, kept
+           consistent between the two cards but distinguished by a small
+           signal badge on the Online icon. */
+        .mode-icon.icon-offline,
+        .mode-icon.icon-online {
+            color: var(--text-main)
+        }
+        .mode-icon.icon-offline svg,
+        .mode-icon.icon-online > svg {
+            width: 56%;
+            height: 56%
+        }
+        .mode-icon .mode-badge-icon {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #34d399;
+            box-shadow: 0 2px 6px rgb(0 0 0/.45)
+        }
+        .mode-icon .mode-badge-icon svg {
+            width: 65%;
+            height: 65%
+        }
+        html[dir="rtl"] .mode-icon .mode-badge-icon {
+            right: auto;
+            left: -5px
+        }
         /* ===== ONLINE SCREENS ===== */
         .forfeit-badge {
             display: inline-block;

@@ -152,7 +152,37 @@
     <div id="start-overlay">
         <div class="start-card" id="mode-select-view">
             <h1 style="text-align: center;" id="mode-title">Route 9</h1>
-            <p class="subtitle" id="start-subtitle">Offline pass-and-play — choose a mode</p>
+            <p class="subtitle" id="start-subtitle">Choose how you want to play</p>
+            <button class="mode-btn" id="btn-home-offline">
+                <div class="mode-icon icon-offline">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-3.8 4-6 8-6s7 2.2 8 6"/></svg>
+                </div>
+                <div class="mode-text">
+                    <div class="t" id="home-offline-title">Offline</div>
+                    <div class="d" id="home-offline-desc">Pass-and-play on this device — no internet needed</div>
+                </div>
+            </button>
+            <button class="mode-btn" id="btn-home-online">
+                <div class="mode-icon icon-online">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-3.8 4-6 8-6s7 2.2 8 6"/></svg>
+                    <span class="mode-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8 15.8a6 6 0 0 1 8 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+                    </span>
+                </div>
+                <div class="mode-text">
+                    <div class="t" id="home-online-title">Online</div>
+                    <div class="d" id="home-online-desc">Play with a friend remotely; one creates a room, the other joins with a code</div>
+                </div>
+            </button>
+        </div>
+
+        <div class="start-card" id="offline-mode-pick-view" style="display:none">
+            <button class="online-back-link" id="btn-offline-pick-back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                <span id="offline-pick-back-label">Back</span>
+            </button>
+            <h1 style="text-align: center;" id="offline-pick-title">Offline</h1>
+            <p class="subtitle" id="offline-pick-subtitle">Pass-and-play — choose a mode</p>
             <button class="mode-btn" id="btn-start-classic">
                 <div class="mode-icon icon-classic">
                     <img src="4p.webp" alt="Classic" class="icon-img">
@@ -172,27 +202,18 @@
                     <div class="d" id="mode-hunter-desc">One escapes, one hunts — first to win takes it</div>
                 </div>
             </button>
-            <button class="mode-btn" id="btn-start-online" style="display:none">
-                <div class="mode-icon icon-hunter">
-                    <span style="font-size:22px">🌐</span>
-                </div>
-                <div class="mode-text">
-                    <div class="t" id="mode-online-title">بازی آنلاین</div>
-                    <div class="d" id="mode-online-desc">با یک دوست از راه دور بازی کن؛ یکی اتاق می‌سازد، دیگری با کد وصل می‌شود</div>
-                </div>
-            </button>
         </div>
 
         <div class="start-card online-card" id="online-setup-view" style="display:none">
             <div id="online-mode-pick">
                 <button class="mode-btn" id="btn-online-pick-2p">
-                    <div class="mode-text"><div class="t" id="online-pick-2p-label">کلاسیک ۱ در برابر ۱</div></div>
+                    <div class="mode-text"><div class="t" id="online-pick-2p-label">Classic 1 vs 1</div></div>
                 </button>
                 <button class="mode-btn" id="btn-online-pick-4p">
-                    <div class="mode-text"><div class="t" id="online-pick-4p-label">چهار نفره</div></div>
+                    <div class="mode-text"><div class="t" id="online-pick-4p-label">4 Players</div></div>
                 </button>
                 <button class="mode-btn" id="btn-online-pick-hunter">
-                    <div class="mode-text"><div class="t" id="online-pick-hunter-label">شکارچی و فراری</div></div>
+                    <div class="mode-text"><div class="t" id="online-pick-hunter-label">Wolf and Sheep</div></div>
                 </button>
             </div>
             <div id="online-choice-view" class="online-choice-grid" style="display:none">
@@ -201,8 +222,8 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/><circle cx="12" cy="12" r="9" opacity=".35"/></svg>
                     </span>
                     <span class="oac-text">
-                        <span class="oac-title" id="online-create-title">ساخت اتاق</span>
-                        <span class="oac-desc" id="online-create-desc">یک کد بساز و برای حریف بفرست</span>
+                        <span class="oac-title" id="online-create-title">Create Room</span>
+                        <span class="oac-desc" id="online-create-desc">Make a code and send it to your opponent</span>
                     </span>
                     <span class="oac-arrow">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
@@ -213,8 +234,8 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5L20 4M14 4h6v6"/><path d="M20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>
                     </span>
                     <span class="oac-text">
-                        <span class="oac-title" id="online-join-title">پیوستن با کد</span>
-                        <span class="oac-desc" id="online-join-desc">کد حریف را وارد کن</span>
+                        <span class="oac-title" id="online-join-title">Join with Code</span>
+                        <span class="oac-desc" id="online-join-desc">Enter your opponent's code</span>
                     </span>
                     <span class="oac-arrow">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
@@ -222,7 +243,7 @@
                 </button>
                 <button class="online-back-link" id="btn-online-back1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
-                    <span id="online-back-label">بازگشت</span>
+                    <span id="online-back-label">Back</span>
                 </button>
             </div>
             <div id="online-create-view" class="online-wait-view online-room-panel" style="display:none">
@@ -233,18 +254,18 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/></svg>
                     </span>
                 </div>
-                <p id="online-status-text" class="online-status-text">در حال آماده‌سازی...</p>
+                <p id="online-status-text" class="online-status-text">Setting up...</p>
                 <div class="online-code-wrap">
                     <div class="online-code-card">
                         <div id="online-code-box" class="online-code-box">...</div>
-                        <button class="online-code-copy-btn" id="btn-online-copy-code" aria-label="کپی کد" type="button">
+                        <button class="online-code-copy-btn" id="btn-online-copy-code" aria-label="Copy code" type="button">
                             <svg class="oc-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
                             <svg class="oc-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
                         </button>
                     </div>
-                    <p class="online-code-hint" id="online-code-hint">این کد را برای حریفت بفرست</p>
+                    <p class="online-code-hint" id="online-code-hint">Send this code to your opponent</p>
                 </div>
-                <button class="online-cancel-btn" id="btn-online-cancel-create" type="button">لغو</button>
+                <button class="online-cancel-btn" id="btn-online-cancel-create" type="button">Cancel</button>
             </div>
             <div id="online-join-view" class="online-wait-view online-room-panel is-joining" style="display:none">
                 <div class="orp-icon-wrap">
@@ -261,10 +282,10 @@
                     <input type="text" class="otp-box" data-otp-idx="4" inputmode="text" autocomplete="off" maxlength="1">
                 </div>
                 <button class="online-primary-btn" id="btn-online-connect" type="button">
-                    <span id="online-connect-label">اتصال</span>
+                    <span id="online-connect-label">Connect</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
-                <button class="online-cancel-btn" id="btn-online-cancel-join" type="button">لغو</button>
+                <button class="online-cancel-btn" id="btn-online-cancel-join" type="button">Cancel</button>
                 <div class="online-join-status-row">
                     <p id="online-join-status" class="online-status-text" style="margin:0"></p>
                 </div>
@@ -274,19 +295,19 @@
 
         <div class="start-card" id="name-entry-view" style="display:none">
             <h1 id="name-entry-title">Enter Player Names</h1>
-            <div class="player-count-toggle game-type-toggle" id="game-type-toggle" data-active="offline">
+            <div class="player-count-toggle game-type-toggle" id="game-type-toggle" data-active="offline" style="display:none">
                 <span class="pc-toggle-slider"></span>
                 <button class="pc-toggle-btn active" id="btn-gt-offline" type="button">
                     <span class="pc-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="M8 20h8M12 18v2"/></svg>
                     </span>
-                    <span id="gt-offline-label">آفلاین</span>
+                    <span id="gt-offline-label">Offline</span>
                 </button>
                 <button class="pc-toggle-btn" id="btn-gt-online" type="button">
                     <span class="pc-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 0 1 3.5 9A15 15 0 0 1 12 21a15 15 0 0 1-3.5-9A15 15 0 0 1 12 3z"/></svg>
                     </span>
-                    <span id="gt-online-label">آنلاین</span>
+                    <span id="gt-online-label">Online</span>
                 </button>
             </div>
             <p class="game-type-lock-hint" id="game-type-lock-hint" style="display:none"></p>
@@ -295,22 +316,22 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-3.8 4-6 8-6s7 2.2 8 6"/></svg>
                 </span>
                 <span class="online-name-lock-text">
-                    <b id="online-name-lock-title">اسم و آواتار داخل اتاق تنظیم می‌شود</b>
-                    <span id="online-name-lock-desc">بعد از ساخت یا پیوستن به اتاق، در لابی بازی اسم و رنگ آواتارت را انتخاب می‌کنی.</span>
+                    <b id="online-name-lock-title">Name &amp; avatar are set inside the room</b>
+                    <span id="online-name-lock-desc">After you create or join a room, you'll pick your name and avatar color in the lobby.</span>
                 </span>
             </div>
             <div class="timer-select-wrap" id="timer-select-wrap">
                 <div class="timer-select-label">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/></svg>
-                    <span id="timer-select-label-text">تایمر کل هر بازیکن</span>
+                    <span id="timer-select-label-text">Each Player's Total Time</span>
                 </div>
                 <div class="timer-chip-group" id="timer-chip-group">
-                    <button class="timer-chip no-timer-chip" data-secs="0" type="button"><span class="tc-num" id="timer-chip-none-label">بدون تایمر</span></button>
-                    <button class="timer-chip" data-secs="30" type="button"><span class="tc-num">۳۰</span><span class="tc-unit" data-unit="sec">ثانیه</span></button>
-                    <button class="timer-chip" data-secs="60" type="button"><span class="tc-num">۱</span><span class="tc-unit" data-unit="min">دقیقه</span></button>
-                    <button class="timer-chip active" data-secs="120" type="button"><span class="tc-num">۲</span><span class="tc-unit" data-unit="min">دقیقه</span></button>
-                    <button class="timer-chip" data-secs="300" type="button"><span class="tc-num">۵</span><span class="tc-unit" data-unit="min">دقیقه</span></button>
-                    <button class="timer-chip" data-secs="600" type="button"><span class="tc-num">۱۰</span><span class="tc-unit" data-unit="min">دقیقه</span></button>
+                    <button class="timer-chip no-timer-chip" data-secs="0" type="button"><span class="tc-num" id="timer-chip-none-label">No timer</span></button>
+                    <button class="timer-chip" data-secs="30" type="button"><span class="tc-num">30</span><span class="tc-unit" data-unit="sec">sec</span></button>
+                    <button class="timer-chip" data-secs="60" type="button"><span class="tc-num">1</span><span class="tc-unit" data-unit="min">min</span></button>
+                    <button class="timer-chip active" data-secs="120" type="button"><span class="tc-num">2</span><span class="tc-unit" data-unit="min">min</span></button>
+                    <button class="timer-chip" data-secs="300" type="button"><span class="tc-num">5</span><span class="tc-unit" data-unit="min">min</span></button>
+                    <button class="timer-chip" data-secs="600" type="button"><span class="tc-num">10</span><span class="tc-unit" data-unit="min">min</span></button>
                 </div>
             </div>
             <div class="player-count-toggle" id="player-count-toggle" data-active="2" style="display:none">
@@ -341,7 +362,7 @@
             <div class="timer-select-wrap online-code-entry-wrap" id="online-code-entry-wrap">
                 <div class="timer-select-label">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M10.5 13.5L20 4M14 4h6v6"/><path d="M20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>
-                    <span id="online-code-entry-label-text">پیوستن با کد</span>
+                    <span id="online-code-entry-label-text">Join with Code</span>
                 </div>
                 <input type="text" id="online-name-entry-code" class="online-code-input" maxlength="5" autocomplete="off" inputmode="text" dir="ltr" placeholder="CYRU5">
             </div>

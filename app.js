@@ -187,16 +187,17 @@
                 sfxTone(ctx, t0, 500, 780, 0.07, 'sine', 0.12);
                 sfxTone(ctx, t0 + 0.03, 780, 900, 0.06, 'sine', 0.08)
             }
+            // Fixed English UI strings. (Persian/multi-language support has
+            // been fully removed — this is a plain, single dictionary now,
+            // not a per-language lookup table.)
             const translations = {
-                en: {
-                    pageTitle: 'Route 9 - Dark Mode',
+                pageTitle: 'Route 9 - Dark Mode',
                     modeTitle: 'Route 9',
                     aboutBtn: 'About',
                     soundOn: 'Sound',
-                    soundOff: 'Muted',
-                    shakeToShowHint: 'Tap the small dot to bring the icon back',
-                    langBtn: 'فارسی',
-                    aboutTitle: 'About Us',
+                soundOff: 'Muted',
+                shakeToShowHint: 'Tap the small dot to bring the icon back',
+                aboutTitle: 'About Us',
                     aboutTagline: 'Strategy. Walls. Victory.',
                     aboutText: 'Route 9 is an offline, pass-and-play strategy board game where players race to reach the opposite side while placing walls to slow each other down.',
                     aboutFeature1: 'Offline play',
@@ -206,7 +207,7 @@
                     aboutCreatorName: 'Mohammad hossein shamsi',
                     aboutFollowLabel: 'Follow us',
                     aboutClose: 'Close',
-                    startSubtitle: 'Your path to victory starts here.',
+                    startSubtitle: 'Choose how you want to play',
                     howToPlay: 'How to Play',
                     modeClassicTitle: 'Classic Game',
                     modeClassicShort: 'Classic',
@@ -216,9 +217,6 @@
                     pc4Label: '4 Players',
                     modeHunterTitle: 'Wolf VS Sheep',
                     modeHunterDesc: 'One escapes, one hunts — first to win takes it.',
-                    modeOnlineTitle: 'Online Game',
-                    modeOnlineDesc: 'Play with a friend remotely; one creates a room, the other joins with a code',
-                    onlineHeroTitle: 'Online Game',
                     onlinePick2pLabel: 'Classic 1 vs 1',
                     onlinePick4pLabel: '4 Players',
                     onlinePickHunterLabel: 'Wolf and Sheep',
@@ -337,15 +335,13 @@
                     timerUnitSec: 'sec',
                     timerUnitMin: 'min',
                     timerNoneLabel: 'No timer',
-                    onlineCodeEntryLabel: 'Join with Code',
-                    timeUpToast: "{name}'s time ran out — turn forfeited"
-                }
+                onlineCodeEntryLabel: 'Join with Code',
+                timeUpToast: "{name}'s time ran out — turn forfeited"
             };
             // English-only build: language switching has been removed.
-            const currentLang = 'en';
 
             function t(key) {
-                return translations.en[key]
+                return translations[key]
             }
 
             function localizeNum(n) {
@@ -515,8 +511,6 @@
                 })
             });
 
-            function omsg(fa, en) { return currentLang === 'fa' ? fa : en }
-
             const onlineState = {
                 active: !1,
                 peer: null,
@@ -678,11 +672,20 @@
                 canvas.classList.toggle('board-flipped', isBoardFlippedForMe())
             }
 
-            document.getElementById('btn-start-online').onclick = () => {
+            document.getElementById('btn-home-online').onclick = () => {
                 onlineEntryFromNameEntry = false;
+                nameEntryOrigin = 'online';
                 document.getElementById('mode-select-view').style.display = 'none';
                 onlineSetupView.style.display = 'block';
                 resetOnlineSetupUI()
+            };
+            document.getElementById('btn-home-offline').onclick = () => {
+                document.getElementById('mode-select-view').style.display = 'none';
+                document.getElementById('offline-mode-pick-view').style.display = 'block'
+            };
+            document.getElementById('btn-offline-pick-back').onclick = () => {
+                document.getElementById('offline-mode-pick-view').style.display = 'none';
+                document.getElementById('mode-select-view').style.display = 'block'
             };
             // Picking a mode here now goes straight to the settings screen
             // (timer + room-code field) instead of an extra "create or join"
@@ -691,6 +694,7 @@
             function enterOnlinePresetSettings(mode) {
                 onlineState.mode = mode;
                 onlineSetupView.style.display = 'none';
+                nameEntryOrigin = 'online';
                 showNameEntry(mode, mode !== 'hunter');
                 setGameType(!0)
             }
@@ -708,10 +712,7 @@
                 resetOnlineSetupUI()
             };
 
-            const networkHintMsg = omsg(
-                'اتصال برقرار نشد. لطفاً اینترنتت را چک کن و دوباره امتحان کن.',
-                'Could not connect. Please check your internet connection and try again.'
-            );
+            const networkHintMsg = 'Could not connect. Please check your internet connection and try again.';
 
             function attachRoomMessageListener() {
                 window.FBRoom.onMessage((data) => { handleOnlineData(data) })
@@ -735,7 +736,7 @@
                 onlineChoiceView.style.display = 'none';
                 onlineCreateView.style.display = 'flex';
                 onlineCodeBox.textContent = '...';
-                onlineStatusText.textContent = omsg('در حال آماده‌سازی اتاق...', 'Setting up room...');
+                onlineStatusText.textContent = 'Setting up room...';
                 onlineState.isHost = !0;
                 onlineState._startSent = !1;
                 const maxP = onlineMaxPlayers();
@@ -745,8 +746,8 @@
                     onlineState.localPlayerId = slot;
                     onlineCodeBox.textContent = code;
                     onlineStatusText.textContent = maxP === 2 ?
-                        omsg('در انتظار پیوستن حریف...', 'Waiting for opponent to join...') :
-                        omsg('در انتظار پیوستن بازیکن‌ها...', 'Waiting for players to join...');
+                        'Waiting for opponent to join...' :
+                        'Waiting for players to join...';
                     attachRoomMessageListener();
                     attachRoomPresenceListener(maxP);
                     window.FBRoom.onPresence(maxP, (playersObj) => {
@@ -757,8 +758,8 @@
                         if (allJoined && !onlineState._startSent) {
                             onlineState._startSent = !0;
                             onlineStatusText.textContent = maxP === 2 ?
-                                omsg('حریف متصل شد!', 'Opponent connected!') :
-                                omsg('همه متصل شدند!', 'Everyone connected!');
+                                'Opponent connected!' :
+                                'Everyone connected!';
                             sendOnline({ type: 'start', mode: onlineState.mode, timerSeconds: onlineState.timerSeconds });
                             beginOnlineGame(onlineState.mode)
                         }
@@ -772,7 +773,7 @@
                 const code = onlineCodeBox.textContent;
                 if (code && navigator.clipboard) {
                     navigator.clipboard.writeText(code).then(() => {
-                        showToast(omsg('کد کپی شد', 'Code copied'));
+                        showToast('Code copied');
                         const btn = document.getElementById('btn-online-copy-code');
                         btn.classList.add('copied');
                         setTimeout(() => btn.classList.remove('copied'), 1400)
@@ -803,23 +804,23 @@
             // still works if that path is ever reached.
             async function startOnlineJoinFlow(code, fromOtp) {
                 onlineState.isHost = !1;
-                onlineJoinStatus.textContent = omsg('در حال اتصال...', 'Connecting...');
+                onlineJoinStatus.textContent = 'Connecting...';
                 const maxP = onlineMaxPlayers();
                 try {
                     const exists = await window.FBRoom.roomExists(code);
                     if (!exists) {
-                        onlineJoinStatus.textContent = omsg('اتاقی با این کد پیدا نشد', 'No room found with this code');
+                        onlineJoinStatus.textContent = 'No room found with this code';
                         if (fromOtp) otpShakeError();
                         return
                     }
                     const slot = await window.FBRoom.joinRoom(code, maxP);
                     if (slot === null) {
-                        onlineJoinStatus.textContent = omsg('این اتاق پر است', 'This room is full');
+                        onlineJoinStatus.textContent = 'This room is full';
                         if (fromOtp) otpShakeError();
                         return
                     }
                     onlineState.localPlayerId = slot;
-                    onlineJoinStatus.textContent = omsg('متصل شد! در انتظار شروع بازی...', 'Connected! Waiting for the game to start...');
+                    onlineJoinStatus.textContent = 'Connected! Waiting for the game to start...';
                     attachRoomMessageListener();
                     attachRoomPresenceListener(maxP)
                 } catch (e) {
@@ -844,14 +845,14 @@
                     if (p && !p.forfeited && !p.finished && other && other.connected === !1) {
                         if (gameMode === '4p') {
                             performForfeit4p(p);
-                            showToast(fmt2(omsg('{name} از بازی خارج شد', '{name} disconnected'), playerDisplayName(p)))
+                            showToast(fmt2('{name} disconnected', playerDisplayName(p)))
                         } else if (!onlineState.peerLeft) {
                             onlineState.peerLeft = !0;
                             if (typeof gameOver !== 'undefined' && gameOver) {
-                                showToast(omsg('حریف بازی را ترک کرد', 'Opponent left the game'));
+                                showToast('Opponent left the game');
                                 refreshGameOverDialogOnlineState()
                             } else {
-                                showToast(omsg('اتصال حریف قطع شد', 'Opponent disconnected'));
+                                showToast('Opponent disconnected');
                                 teardownOnline(!1);
                                 goHome()
                             }
@@ -975,6 +976,11 @@
             // agreeing with each other instead of slowly falling behind.
             let turnTimerDeadline = null;
             let onlineEntryFromNameEntry = false;
+            // Tracks which "second page" led into the name-entry/settings
+            // screen — 'offline' (Classic/Hunter picker) or 'online' (the
+            // online mode picker) — purely so its own Back button returns
+            // to the right place. Doesn't affect game logic.
+            let nameEntryOrigin = 'offline';
 
             function timerIsEnabled() {
                 return !!currentTurnTimerSeconds
@@ -990,7 +996,7 @@
                 const m = Math.floor(secs / 60),
                     s = secs % 60;
                 const str = m > 0 ? (m + ':' + String(s).padStart(2, '0')) : ('0:' + String(s).padStart(2, '0'));
-                return currentLang === 'fa' ? toFaDigits(str) : str
+                return str
             }
 
             function stopTurnTimer() {
@@ -1210,7 +1216,7 @@
             const FOUR_P_SLOTS = ['red', 'blue', 'green', 'yellow'];
 
             function slotPlaceholder(slot) {
-                const dpn = translations[currentLang].defaultPlayerNames;
+                const dpn = translations.defaultPlayerNames;
                 return dpn[SLOT_DPN_INDEX[slot]] || dpn[0]
             }
 
@@ -1287,7 +1293,7 @@
             ];
 
             function placeholderForId(mode, id) {
-                const dpn = translations[currentLang].defaultPlayerNames;
+                const dpn = translations.defaultPlayerNames;
                 if (mode === '4p') return dpn[id] || dpn[0];
                 return slotPlaceholder(slotNameForId(mode, id))
             }
@@ -1557,9 +1563,6 @@
                 setTextContent('team-vs-label', t('vs'));
                 setTextContent('mode-hunter-title', t('modeHunterTitle'));
                 setTextContent('mode-hunter-desc', t('modeHunterDesc'));
-                setTextContent('mode-online-title', t('modeOnlineTitle'));
-                setTextContent('mode-online-desc', t('modeOnlineDesc'));
-                setTextContent('online-hero-title', t('onlineHeroTitle'));
                 setTextContent('online-pick-2p-label', t('onlinePick2pLabel'));
                 setTextContent('online-pick-4p-label', t('onlinePick4pLabel'));
                 setTextContent('online-pick-hunter-label', t('onlinePickHunterLabel'));
@@ -1610,7 +1613,7 @@
                 setTextContent('lbl-mode', t('mode'));
                 setTextContent('lbl-walls-left', t('wallsLeft'));
                 setTextContent('lbl-status', t('status'));
-                setTextContent('lbl-online-turn', omsg('نوبت', 'Turn'));
+                setTextContent('lbl-online-turn', 'Turn');
                 setTextContent('lbl-objective', t('objective'));
                 setTextContent('lbl-walls', t('walls'));
                 document.getElementById('info-walls-text').innerHTML = t('wallsText');
@@ -1631,7 +1634,7 @@
                 setTextContent('hunter-reveal-title', t('hunterRevealTitle'));
                 setTextContent('hunter-reveal-sub', t('hunterRevealSub'));
                 setTextContent('mode-title', t('modeTitle'));
-                const dpn = translations[currentLang].defaultPlayerNames;
+                const dpn = translations.defaultPlayerNames;
                 const ph = (id, idx) => {
                     const el = document.getElementById(id);
                     if (el) el.placeholder = dpn[idx]
@@ -2174,7 +2177,7 @@
             }
 
             function getDefaultPlayerName(p) {
-                const dpn = translations[currentLang].defaultPlayerNames;
+                const dpn = translations.defaultPlayerNames;
                 if (gameMode === 'hunter') {
                     return p.role === 'hunter' ? dpn[0] : dpn[1]
                 }
@@ -2187,12 +2190,11 @@
             }
 
             function teamName(team) {
-                return translations[currentLang].teamNames[team]
+                return translations.teamNames[team]
             }
 
             function teamPlayerNames(team) {
-                const sep = currentLang === 'fa' ? ' و ' : ' & ';
-                return players.filter(p => p.team === team).map(playerDisplayName).join(sep)
+                return players.filter(p => p.team === team).map(playerDisplayName).join(' & ')
             }
 
             function currentPlayer() {
@@ -2261,8 +2263,8 @@
                 sfxGameStart()
             }
             let classicSubMode = '2p';
-            document.getElementById('btn-start-classic').onclick = () => showNameEntry(classicSubMode, !0);
-            document.getElementById('btn-start-hunter').onclick = () => showNameEntry('hunter');
+            document.getElementById('btn-start-classic').onclick = () => { nameEntryOrigin = 'offline'; showNameEntry(classicSubMode, !0) };
+            document.getElementById('btn-start-hunter').onclick = () => { nameEntryOrigin = 'offline'; showNameEntry('hunter') };
             document.getElementById('btn-pc-2').onclick = () => switchClassicSubMode('2p');
             document.getElementById('btn-pc-4').onclick = () => switchClassicSubMode('4p');
 
@@ -2359,7 +2361,12 @@
             }
             document.getElementById('btn-name-back').onclick = () => {
                 document.getElementById('name-entry-view').style.display = 'none';
-                document.getElementById('mode-select-view').style.display = 'block'
+                if (nameEntryOrigin === 'online') {
+                    onlineSetupView.style.display = 'block';
+                    resetOnlineSetupUI()
+                } else {
+                    document.getElementById('offline-mode-pick-view').style.display = 'block'
+                }
             };
             document.getElementById('btn-name-confirm').onclick = () => {
                 if (selectedGameTypeOnline) {
@@ -2611,7 +2618,7 @@
                     card.classList.add('forfeited');
                     const badge = document.createElement('span');
                     badge.className = 'forfeit-badge';
-                    badge.textContent = omsg('انصراف داد', 'Forfeited');
+                    badge.textContent = 'Forfeited';
                     nameDiv.appendChild(badge)
                 }
                 info.appendChild(nameDiv);
@@ -3121,7 +3128,7 @@
             }
             btnUndo.onclick = () => {
                 if (isAnimating) return;
-                if (onlineState.active) { showToast(omsg('در حالت آنلاین امکان بازگشت نیست', 'Undo is not available in online games')); return }
+                if (onlineState.active) { showToast('Undo is not available in online games'); return }
                 if (undoStack.length === 0) {
                     showToast(t('toastNothingToUndo'));
                     return
@@ -3512,6 +3519,8 @@
                 onlineEntryFromNameEntry = false;
                 if (onlineState.active) { teardownOnline(!0); resetOnlineSetupUI() }
                 document.getElementById('name-entry-view').style.display = 'none';
+                document.getElementById('offline-mode-pick-view').style.display = 'none';
+                onlineSetupView.style.display = 'none';
                 const lobbyView = document.getElementById('online-lobby-view');
                 if (lobbyView) lobbyView.style.display = 'none';
                 document.getElementById('mode-select-view').style.display = 'block';
@@ -3598,8 +3607,8 @@
                 row.classList.toggle('otb-mine', myTurn);
                 row.classList.toggle('otb-theirs', !myTurn);
                 row.querySelector('.otb-text').textContent = myTurn ?
-                    omsg('نوبت شماست', 'Your turn') :
-                    omsg('نوبت حریف', "Opponent's turn");
+                    'Your turn' :
+                    "Opponent's turn";
                 row.style.display = 'flex'
             }
 
