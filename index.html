@@ -475,52 +475,28 @@
             <h1 id="online-lobby-title">Set Name &amp; Avatar</h1>
             <p class="subtitle" id="online-lobby-desc">You have up to 15 seconds to set your name and avatar color</p>
             <div id="online-lobby-countdown"><span id="online-lobby-countdown-num">15</span></div>
-
-            <div class="duel-row" id="duel-row">
-                <div class="player-setup-card duel-seat duel-seat-me" id="online-lobby-me-card">
-                    <span class="duel-you-tag" id="duel-you-tag">You</span>
-                    <div class="duel-avatar-wrap">
-                        <span class="avatar-preview duel-avatar" id="avatar-preview-online-me" style="background:#E74C3C"></span>
-                        <span class="ready-check-badge" id="ready-check-me">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
-                        </span>
-                    </div>
-                    <div class="name-input-row">
-                        <input type="text" id="input-name-online-me" maxlength="13" placeholder="">
-                    </div>
+            <div class="player-setup-card">
+                <div class="name-input-row">
+                    <span class="avatar-preview" id="avatar-preview-online-me" style="background:#E74C3C"></span>
+                    <input type="text" id="input-name-online-me" maxlength="13" placeholder="">
                     <span class="role-live-badge" id="role-live-badge-me" style="display:none"></span>
-                    <div class="customize-row">
-                        <div class="swatch-group" id="swatches-online-me"></div>
-                    </div>
                 </div>
-
-                <div class="duel-vs" id="duel-vs"><span>VS</span></div>
-
-                <div class="player-setup-card duel-seat online-lobby-opp-card" id="online-lobby-opp1-card">
-                    <span class="duel-ready-badge" id="duel-ready-badge-opp">
-                        <span class="drb-dot"></span><span class="drb-label" id="duel-ready-badge-opp-label">Not ready yet</span>
-                    </span>
-                    <div class="duel-avatar-wrap">
-                        <span class="avatar-preview duel-avatar" id="avatar-preview-online-opp" style="background:#3498DB"></span>
-                        <span class="ready-check-badge" id="ready-check-opp">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
-                        </span>
-                    </div>
-                    <div class="name-input-row">
-                        <span id="name-online-opp" class="duel-opp-name"></span>
-                    </div>
+                <div class="customize-row">
+                    <div class="swatch-group" id="swatches-online-me"></div>
+                </div>
+            </div>
+            <div class="player-setup-card online-lobby-opp-card" id="online-lobby-opp1-card">
+                <div class="name-input-row">
+                    <span class="avatar-preview" id="avatar-preview-online-opp" style="background:#3498DB"></span>
+                    <span id="name-online-opp" style="font-weight:700;font-size:15px;"></span>
                     <span class="role-live-badge" id="role-live-badge-opp" style="display:none"></span>
                     <span class="forfeit-badge" id="forfeit-badge-online-opp1" style="display:none">—</span>
                 </div>
             </div>
-
             <div class="player-setup-card online-lobby-opp-card" id="online-lobby-opp2-card" style="display:none">
                 <div class="name-input-row">
                     <span class="avatar-preview" id="avatar-preview-online-opp2" style="background:#2ECC71"></span>
                     <span id="name-online-opp2" style="font-weight:700;font-size:15px;"></span>
-                    <span class="duel-ready-badge duel-ready-badge-inline" id="duel-ready-badge-opp2">
-                        <span class="drb-dot"></span><span class="drb-label" id="duel-ready-badge-opp2-label">Not ready</span>
-                    </span>
                     <span class="forfeit-badge" id="forfeit-badge-online-opp2" style="display:none">—</span>
                 </div>
             </div>
@@ -528,13 +504,9 @@
                 <div class="name-input-row">
                     <span class="avatar-preview" id="avatar-preview-online-opp3" style="background:#F1C40F"></span>
                     <span id="name-online-opp3" style="font-weight:700;font-size:15px;"></span>
-                    <span class="duel-ready-badge duel-ready-badge-inline" id="duel-ready-badge-opp3">
-                        <span class="drb-dot"></span><span class="drb-label" id="duel-ready-badge-opp3-label">Not ready</span>
-                    </span>
                     <span class="forfeit-badge" id="forfeit-badge-online-opp3" style="display:none">—</span>
                 </div>
             </div>
-
             <div class="hunter-role-pick" id="hunter-role-pick-section" style="display:none">
                 <p class="hunter-role-pick-label" id="hunter-role-pick-label">Pick your role</p>
                 <div class="hunter-role-options">
@@ -548,30 +520,7 @@
                     </button>
                 </div>
             </div>
-
-            <button type="button" class="online-ready-btn" id="btn-online-ready">
-                <span class="orb-icon orb-icon-idle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
-                </span>
-                <span class="orb-icon orb-icon-spin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="42 14"/></svg>
-                </span>
-                <span id="online-ready-btn-label">Ready</span>
-            </button>
             <p id="online-lobby-hint" style="color:var(--text-muted);font-size:12px;text-align:center;margin-top:2px;">You can only change your own name and color</p>
-        </div>
-    </div>
-
-    <div id="online-starting-overlay">
-        <div class="starting-card">
-            <div class="starting-duo">
-                <span class="starting-avatar" id="starting-avatar-me"></span>
-                <span class="starting-vs">VS</span>
-                <span class="starting-avatar" id="starting-avatar-opp"></span>
-                <span class="starting-spin-ring"></span>
-            </div>
-            <h2 id="starting-title">Game is starting…</h2>
-            <p id="starting-sub">Everyone is ready — good luck!</p>
         </div>
     </div>
 
