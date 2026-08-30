@@ -534,6 +534,51 @@
                 requestedByOpponent: !1
             };
 
+            // ===== Resume-after-reload (online) ================================
+            // If the tab/browser is closed or refreshed mid-match, all JS state
+            // is lost — but the *server* still holds this player's room slot
+            // open (marked disconnected) for a while. We remember just enough
+            // in localStorage to reconnect to that same room on the next visit,
+            // then ask the opponent's still-live device for a full snapshot of
+            // the board so we can drop the player back in exactly where the
+            // match stands. If they decline, we notify the opponent right away
+            // instead of making them sit through the 30s disconnect timer.
+            const ONLINE_SESSION_KEY = 'barricade-active-online-session';
+            const ONLINE_SESSION_MAX_AGE_MS = 90 * 60 * 1000; // 90 minutes
+
+            function saveOnlineSession() {
+                try {
+                    const code = window.FBRoom && window.FBRoom._roomCode;
+                    if (!code) return;
+                    localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({
+                        roomCode: code,
+                        mode: onlineState.mode,
+                        maxPlayers: onlineMaxPlayers(),
+                        localPlayerId: onlineState.localPlayerId,
+                        timerSeconds: onlineState.timerSeconds,
+                        savedAt: Date.now()
+                    }))
+                } catch (e) {}
+            }
+
+            function clearOnlineSession() {
+                try { localStorage.removeItem(ONLINE_SESSION_KEY) } catch (e) {}
+            }
+
+            function readOnlineSession() {
+                try {
+                    const raw = localStorage.getItem(ONLINE_SESSION_KEY);
+                    if (!raw) return null;
+                    const data = JSON.parse(raw);
+                    if (!data || !data.roomCode) return null;
+                    if (Date.now() - (data.savedAt || 0) > ONLINE_SESSION_MAX_AGE_MS) {
+                        clearOnlineSession();
+                        return null
+                    }
+                    return data
+                } catch (e) { return null }
+            }
+
             // Lobby (name/avatar — and, for Wolf & Sheep, role-pick) countdown
             // length. Wolf & Sheep gets longer since players also have to pick
             // a role in that window; other modes just set name/avatar.
@@ -634,6 +679,7 @@
             }
 
             function teardownOnline(notifyPeer) {
+                clearOnlineSession();
                 if (notifyPeer) sendOnline({ type: 'leave' });
                 if (window.FBRoom) { try { window.FBRoom.leaveRoom() } catch (e) {} }
                 onlineState.active = !1;
@@ -1042,19 +1088,171 @@
             // and replay the queue, in arrival order, only once our local
             // animation/turn state has caught up.
             let onlineMsgQueue = [];
+            // True on a reconnecting device between sending 'request-state' and
+            // receiving 'state-sync' back — every other incoming message is
+            // queued during that window since we have no board to apply it to
+            // yet (see handleOnlineData / drainOnlineMsgQueue).
+            let awaitingStateSync = !1;
 
             function handleOnlineData(data) {
                 if (!data || !data.type) return;
+                if (data.type === 'request-state') { respondWithStateSync(); return }
+                if (data.type === 'state-sync') { handleStateSyncMessage(data); return }
                 if (data.type === 'start') {
                     onlineState.timerSeconds = data.timerSeconds || DEFAULT_TIMER_SECONDS;
                     beginOnlineGame(data.mode);
                     return
                 }
-                if (isAnimating) {
+                if (isAnimating || awaitingStateSync) {
                     onlineMsgQueue.push(data);
                     return
                 }
                 processOnlineMessage(data)
+            }
+
+            // Builds a complete, self-contained snapshot of the live match so a
+            // reconnecting opponent's device (which has zero local state after
+            // a reload) can rebuild the exact same board, turn, timers and
+            // history. Only ever sent by the device that's still actively in
+            // the game (never by the one that's mid-reconnect itself).
+            function buildFullGameStateSnapshot() {
+                return {
+                    gameMode: gameMode,
+                    turnOrder: turnOrder.slice(),
+                    turn: turn,
+                    turnIndex: turnIndex,
+                    gameOver: gameOver,
+                    huntProximity: huntProximity,
+                    hWalls: hWalls.map(row => row.slice()),
+                    vWalls: vWalls.map(row => row.slice()),
+                    players: players.map(p => ({ ...p })),
+                    history: history.slice(),
+                    currentTurnTimerSeconds: currentTurnTimerSeconds,
+                    onlineMode: onlineState.mode,
+                    onlineTimerSeconds: onlineState.timerSeconds,
+                    hunterRoleByPlayerId: onlineState.hunterRoleByPlayerId
+                }
+            }
+
+            function respondWithStateSync() {
+                if (!onlineState.active) return; // nothing to share
+                sendOnline({ type: 'state-sync', state: buildFullGameStateSnapshot() })
+            }
+
+            // Rebuilds every piece of client-side state a fresh page load lost,
+            // then reveals the board exactly like completeOnlineLobbyStart()
+            // does at the end of the normal online-lobby flow.
+            function applyFullGameStateSnapshot(state) {
+                gameMode = state.gameMode;
+                turnOrder = state.turnOrder.slice();
+                turn = state.turn;
+                turnIndex = state.turnIndex;
+                gameOver = !1;
+                huntProximity = state.huntProximity || 0;
+                hWalls = state.hWalls.map(row => row.slice());
+                vWalls = state.vWalls.map(row => row.slice());
+                players = state.players.map(p => ({ ...p }));
+                history = state.history ? state.history.slice() : [];
+                undoStack = [];
+                currentPage = 0;
+                uiMode = 'move';
+                isAnimating = !1;
+                animData = null;
+                wallAnimation = null;
+                captureAnim = null;
+                pendingWallPos = null;
+                wallPreviewPos = null;
+                onlineMsgQueue = [];
+                currentTurnTimerSeconds = state.currentTurnTimerSeconds;
+                onlineState.mode = state.onlineMode;
+                onlineState.timerSeconds = state.onlineTimerSeconds;
+                onlineState.hunterRoleByPlayerId = state.hunterRoleByPlayerId;
+                onlineState.active = !0;
+                onlineState.peerLeft = !1;
+
+                // Rebuild the lobby identity bookkeeping (names/colors) so the
+                // topbar and player cards render correctly without having gone
+                // through the actual online lobby on this device.
+                onlineLobby.mySlot = slotNameForId(gameMode, onlineState.localPlayerId);
+                const me = players.find(p => p.id === onlineState.localPlayerId);
+                onlineLobby.me = {
+                    name: (me && me.customName) || '',
+                    color: (me && me.color) || customColor(onlineLobby.mySlot)
+                };
+                onlineLobby.othersById = {};
+                players.forEach(p => {
+                    if (p.id !== onlineState.localPlayerId) {
+                        onlineLobby.othersById[p.id] = { name: p.customName || '', color: p.color }
+                    }
+                });
+
+                hideWallConfirm();
+                infoMode.textContent = gameMode === '2p' ? t('mode2p') : (gameMode === '4p' ? t('mode4p') : t('modeHunter'));
+                infoObjective.innerHTML = (gameMode === '2p' ? t('objective2p') : (gameMode === '4p' ? t('objective4p') : t(
+                    'objectiveHunter'))).replace(/\n/g, '<br>');
+                const wallsTextEl = document.getElementById('info-walls-text');
+                if (gameMode === 'hunter') wallsTextEl.innerHTML = t('wallsTextHunter');
+                else if (gameMode === '4p') wallsTextEl.innerHTML = t('wallsText4p');
+                else wallsTextEl.innerHTML = t('wallsText');
+                renderTopbar();
+                updateBtnState();
+                updateScores();
+                updateActivePlayerUI();
+                updateHistory();
+                updateBoardOrientation();
+                updateProximityUI();
+                draw();
+
+                startOverlay.style.display = 'none';
+                appEl.classList.add('visible');
+                setThemeColor('#000000');
+                btnHome.style.display = 'none';
+                btnUndo.style.display = 'none';
+                btnRepeat.style.display = 'none';
+                const topCtrls = document.getElementById('top-controls');
+                if (topCtrls) topCtrls.style.display = 'none';
+                const soundBtnHeader = document.getElementById('btn-sound-board');
+                if (soundBtnHeader) soundBtnHeader.classList.add('visible');
+
+                clearAllDisconnectCountdowns();
+                // Re-anchor the shared turn clock from our restored timeBank
+                // values — syncTurnTimer() picks up from here exactly like it
+                // does after any normal turn change.
+                turnTimerPlayerId = null;
+                syncTurnTimer();
+                sfxGameStart();
+                saveOnlineSession()
+            }
+
+            function handleStateSyncMessage(data) {
+                if (!awaitingStateSync) return; // stray/late reply, already handled
+                awaitingStateSync = !1;
+                if (stateSyncTimeoutId) { clearTimeout(stateSyncTimeoutId); stateSyncTimeoutId = null }
+                const state = data && data.state;
+                if (!state) {
+                    showResumeStatus("Sync failed — please try again.");
+                    setResumeButtonsEnabled(!0);
+                    return
+                }
+                if (state.gameOver) {
+                    // The match was already decided while we were away (the
+                    // opponent's 30s grace timer ran out on their device).
+                    // Nothing to resume — send this device home cleanly.
+                    closeResumeOverlay();
+                    clearOnlineSession();
+                    pendingResumeSession = null;
+                    teardownOnline(!1);
+                    showStartScreen('mode-select-view');
+                    startOverlay.style.display = 'flex';
+                    appEl.classList.remove('visible');
+                    showToast('That match already ended while you were away.');
+                    return
+                }
+                applyFullGameStateSnapshot(state);
+                closeResumeOverlay();
+                pendingResumeSession = null;
+                showToast("You're back! Continue the match.");
+                drainOnlineMsgQueue()
             }
 
             function processOnlineMessage(data) {
@@ -1124,11 +1322,110 @@
             // again, so the queue drains naturally in the original arrival
             // order without deep recursion.
             function drainOnlineMsgQueue() {
-                if (isAnimating || !onlineState.active) return;
+                if (isAnimating || !onlineState.active || awaitingStateSync) return;
                 if (!onlineMsgQueue.length) return;
                 const next = onlineMsgQueue.shift();
                 processOnlineMessage(next)
             }
+
+            // ===== Resume-after-reload dialog wiring ============================
+            let pendingResumeSession = null;
+            let stateSyncTimeoutId = null;
+
+            function showResumeStatus(msg) {
+                const el = document.getElementById('resume-status');
+                if (!el) return;
+                el.textContent = msg || '';
+                el.classList.toggle('visible', !!msg)
+            }
+
+            function setResumeButtonsEnabled(enabled) {
+                const yes = document.getElementById('btn-resume-yes');
+                const no = document.getElementById('btn-resume-no');
+                if (yes) yes.disabled = !enabled;
+                if (no) no.disabled = !enabled
+            }
+
+            function closeResumeOverlay() {
+                const overlay = document.getElementById('resume-game-overlay');
+                if (overlay) overlay.classList.remove('visible')
+            }
+
+            function checkForResumableOnlineSession() {
+                const session = readOnlineSession();
+                if (!session) return;
+                pendingResumeSession = session;
+                const codeEl = document.getElementById('resume-room-code');
+                if (codeEl) codeEl.textContent = 'Room ' + session.roomCode;
+                showResumeStatus('');
+                setResumeButtonsEnabled(!0);
+                const overlay = document.getElementById('resume-game-overlay');
+                if (overlay) overlay.classList.add('visible')
+            }
+
+            const btnResumeYes = document.getElementById('btn-resume-yes');
+            const btnResumeNo = document.getElementById('btn-resume-no');
+            if (btnResumeYes) btnResumeYes.onclick = async () => {
+                if (!pendingResumeSession) return;
+                const session = pendingResumeSession;
+                setResumeButtonsEnabled(!1);
+                showResumeStatus('Reconnecting to your match…');
+                try {
+                    const exists = await window.FBRoom.roomExists(session.roomCode);
+                    if (!exists) {
+                        showResumeStatus('This match is no longer available.');
+                        setTimeout(() => { closeResumeOverlay(); clearOnlineSession(); pendingResumeSession = null }, 1800);
+                        return
+                    }
+                    const slot = await window.FBRoom.joinRoom(session.roomCode, session.maxPlayers);
+                    if (slot === null || slot === undefined) {
+                        showResumeStatus("Couldn't rejoin — the room is full.");
+                        setTimeout(() => { closeResumeOverlay(); clearOnlineSession(); pendingResumeSession = null }, 1800);
+                        return
+                    }
+                    onlineState.active = !0;
+                    onlineState.mode = session.mode;
+                    onlineState.localPlayerId = slot;
+                    onlineState.timerSeconds = session.timerSeconds;
+                    onlineState.peerLeft = !1;
+                    onlineState.isHost = !1;
+                    awaitingStateSync = !0;
+                    attachRoomMessageListener();
+                    attachRoomPresenceListener(session.maxPlayers);
+                    showResumeStatus('Syncing the board…');
+                    sendOnline({ type: 'request-state' });
+                    stateSyncTimeoutId = setTimeout(() => {
+                        if (!awaitingStateSync) return;
+                        awaitingStateSync = !1;
+                        showResumeStatus("Couldn't reach your opponent — they may be reconnecting too. Try again in a moment.");
+                        setResumeButtonsEnabled(!0)
+                    }, 9000)
+                } catch (e) {
+                    showResumeStatus('Connection error — check your internet and try again.');
+                    setResumeButtonsEnabled(!0)
+                }
+            };
+            if (btnResumeNo) btnResumeNo.onclick = async () => {
+                if (!pendingResumeSession) return;
+                const session = pendingResumeSession;
+                setResumeButtonsEnabled(!1);
+                showResumeStatus('Forfeiting the match…');
+                try {
+                    const exists = await window.FBRoom.roomExists(session.roomCode);
+                    if (exists) {
+                        const slot = await window.FBRoom.joinRoom(session.roomCode, session.maxPlayers);
+                        if (slot !== null && slot !== undefined) {
+                            const forfeitType = session.mode === '4p' ? 'forfeit' : 'resign';
+                            sendOnline({ type: forfeitType, playerId: slot });
+                            try { window.FBRoom.leaveRoom() } catch (e) {}
+                        }
+                    }
+                } catch (e) {}
+                clearOnlineSession();
+                pendingResumeSession = null;
+                closeResumeOverlay();
+                showToast('You forfeited the match — your opponent wins.')
+            };
             // ================= END ONLINE MULTIPLAYER =================
 
             let gameMode = '2p';
@@ -1726,7 +2023,8 @@
                 renderTopbar();
                 updateScores();
                 updateActivePlayerUI();
-                draw()
+                draw();
+                saveOnlineSession()
             }
             // ================= END ONLINE LOBBY =================
 
@@ -3644,6 +3942,7 @@
             }
 
             function showGameOverDialog(winnerPlayer, loserPlayer, winnerTeam) {
+                clearOnlineSession();
                 let winnerLabel, loserLabel, winnerColorClass, winnerColor;
                 if (winnerTeam !== undefined && winnerTeam !== null) {
                     const loserTeam = winnerTeam === 0 ? 1 : 0;
@@ -4216,4 +4515,9 @@
             }
             trapBackNav();
             window.addEventListener('popstate', handleHardwareBack);
+
+            // Always land on the normal start screen first, then — if this
+            // device remembers a match still in progress — surface the
+            // resume/forfeit dialog on top of it.
+            checkForResumableOnlineSession();
         })()

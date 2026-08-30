@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" href="icon-180.png">
     <title id="page-title">Route 9 - Dark Mode</title>
 
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 
     <script>
         !function(e,t,n){e.yektanetAnalyticsObject=n,e[n]=e[n]||function(){e[n].q.push(arguments)},e[n].q=e[n].q||[];var a=t.getElementsByTagName("head")[0],r=new Date,c="https://cdn.yektanet.com/superscript/x6fV5xRI/native-mhdhoseinsh.github.io-47969/yn_pub.js?v="+r.getFullYear().toString()+"0"+r.getMonth()+"0"+r.getDate()+"0"+r.getHours(),s=t.createElement("link");s.rel="preload",s.as="script",s.href=c,a.appendChild(s);var l=t.createElement("script");l.async=!0,l.src=c,a.appendChild(l)}(window,document,"yektanet");
@@ -611,6 +611,42 @@
         </div>
     </div>
 
+    <!-- Shown on page load when localStorage remembers a match that was still
+         in progress on this device (browser closed/refreshed mid-game). Lets
+         the player jump straight back into the live board, or forfeit so the
+         opponent is declared the winner right away instead of waiting out
+         the 30s disconnect grace timer. Always rendered in English by
+         design, regardless of the site's current language. -->
+    <div id="resume-game-overlay">
+        <div class="resume-card">
+            <div class="resume-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M12 7v5l3 3"/>
+                </svg>
+            </div>
+            <div class="resume-badge" id="resume-room-code">Room —</div>
+            <div class="resume-title">Your Match Is Still Live!</div>
+            <p class="resume-text">Looks like you stepped away mid-game. Jump back in and keep fighting for the win — or forfeit now and your opponent takes it.</p>
+            <div class="resume-actions">
+                <button id="btn-resume-yes" class="resume-btn resume-primary">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="6 3 20 12 6 21 6 3"/>
+                    </svg>
+                    <span>Rejoin &amp; Continue</span>
+                </button>
+                <button id="btn-resume-no" class="resume-btn resume-secondary">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 22V4"/>
+                        <path d="M4 4h13l-2.5 4L17 12H4"/>
+                    </svg>
+                    <span>Forfeit Match</span>
+                </button>
+            </div>
+            <div class="resume-status" id="resume-status"></div>
+        </div>
+    </div>
+
     <div id="app">
         <div class="topbar" id="topbar"></div>
         <div class="main-area">
@@ -752,6 +788,6 @@
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://unpkg.com/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
     <script src="room.js?v=3"></script>
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
