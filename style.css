@@ -275,18 +275,15 @@
             gap: 8px;
             padding: 14px 6px 12px;
             background: var(--card-bg-2, #12161d);
-            border: 1.5px solid var(--border-color);
+            border: none;
+            box-shadow: inset 0 0 0 1.5px var(--border-color);
             border-radius: 14px;
             cursor: pointer;
             font-family: inherit;
             -webkit-appearance: none;
             appearance: none;
             outline: none;
-            box-shadow: none;
-            transition: border-color .2s ease, background .2s ease, transform .15s ease
-        }
-        .online-mode-chip:focus {
-            box-shadow: none
+            transition: background .2s ease, box-shadow .2s ease, transform .15s ease
         }
         .online-mode-chip:active {
             transform: scale(.96)
@@ -315,7 +312,6 @@
             transition: color .2s ease
         }
         .online-mode-chip.active {
-            border-color: transparent;
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
             box-shadow: none
         }
@@ -1045,13 +1041,14 @@
             justify-content: center;
             gap: 1px;
             background: #151a22;
-            border: 1.5px solid var(--border-color);
+            border: none;
+            box-shadow: inset 0 0 0 1.5px var(--border-color);
             border-radius: 12px;
             padding: 8px 6px;
             cursor: pointer;
             color: var(--text-muted);
             font-family: inherit;
-            transition: all .22s cubic-bezier(.34, 1.56, .64, 1)
+            transition: background .22s ease, box-shadow .22s ease, transform .22s cubic-bezier(.34, 1.56, .64, 1), color .22s ease
         }
         .timer-chip .tc-num {
             font-size: 15px;
@@ -1066,14 +1063,13 @@
         }
         .timer-chip:hover {
             transform: translateY(-1px);
-            border-color: #3a4451
+            box-shadow: inset 0 0 0 1.5px #3a4451
         }
         .timer-chip:active {
             transform: scale(.94)
         }
         .timer-chip.active {
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            border-color: transparent;
             box-shadow: none
         }
         .timer-chip.active .tc-num,
