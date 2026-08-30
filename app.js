@@ -327,6 +327,9 @@
                     rematchAcceptLabel: "Accept Opponent's Rematch",
                     rematchWaitingLabel: 'Waiting for opponent...',
                     opponentLeftMsg: 'Opponent left the game',
+                    disconnectBannerText: '{name} disconnected — {time} to reconnect',
+                    disconnectReconnectedToast: '{name} reconnected',
+                    disconnectTimeoutToast: '{name} lost connection — forfeited the match',
                     toastRematchRequested: 'Opponent wants a rematch',
                     gtOfflineLabel: 'Offline',
                     gtOnlineLabel: 'Online',
@@ -642,6 +645,7 @@
                 onlineRematch.requestedByOpponent = !1;
                 onlineState.hunterRoleByPlayerId = null;
                 resetOnlineHunterPick();
+                clearAllDisconnectCountdowns();
                 if (onlineLobby.timer) { clearInterval(onlineLobby.timer); onlineLobby.timer = null }
                 stopTurnTimer();
                 turnTimerPlayerId = null;
@@ -860,6 +864,109 @@
                 startOnlineJoinFlow(raw, !0)
             };
 
+            // ===== Reconnect grace period ===================================
+            // When a player's connection drops mid-game, they get a 30s
+            // window to come back before being declared the loser. Keyed by
+            // player id so it naturally supports both 1v1/Wolf&Sheep (one
+            // possible disconnect at a time) and 4-player (up to three).
+            // A fresh disconnect after a successful reconnect always starts
+            // a brand new 30s countdown — nothing here persists remaining
+            // time across a reconnect.
+            const DISCONNECT_GRACE_SECONDS = 30;
+            const onlineDisconnectTimers = {}; // playerId -> { remaining, intervalId }
+
+            function formatGraceTime(secs) {
+                const m = Math.floor(secs / 60);
+                const s = secs % 60;
+                return m > 0 ? (m + ':' + String(s).padStart(2, '0')) : String(s)
+            }
+
+            function updateDisconnectBanner() {
+                const banner = document.getElementById('disconnect-banner');
+                if (!banner) return;
+                const ids = Object.keys(onlineDisconnectTimers);
+                if (!onlineState.active || ids.length === 0) {
+                    banner.style.display = 'none';
+                    banner.innerHTML = '';
+                    return
+                }
+                banner.innerHTML = '';
+                ids.forEach(idStr => {
+                    const timer = onlineDisconnectTimers[idStr];
+                    const p = players.find(pl => pl.id === Number(idStr));
+                    const name = p ? playerDisplayName(p) : '';
+                    const row = document.createElement('div');
+                    row.className = 'disconnect-banner-row';
+                    const dot = document.createElement('span');
+                    dot.className = 'db-dot';
+                    const text = document.createElement('span');
+                    text.className = 'db-text';
+                    text.textContent = fmt(t('disconnectBannerText'), { name });
+                    const time = document.createElement('span');
+                    time.className = 'db-time';
+                    time.textContent = formatGraceTime(Math.max(0, timer.remaining));
+                    row.append(dot, text, time);
+                    banner.appendChild(row)
+                });
+                banner.style.display = 'flex'
+            }
+
+            function clearDisconnectCountdown(playerId) {
+                const timer = onlineDisconnectTimers[playerId];
+                if (!timer) return;
+                clearInterval(timer.intervalId);
+                delete onlineDisconnectTimers[playerId];
+                updateDisconnectBanner()
+            }
+
+            function clearAllDisconnectCountdowns() {
+                Object.keys(onlineDisconnectTimers).forEach(id => clearInterval(onlineDisconnectTimers[id].intervalId));
+                for (const id in onlineDisconnectTimers) delete onlineDisconnectTimers[id];
+                updateDisconnectBanner()
+            }
+
+            // Called once the 30s grace period actually runs out without the
+            // player reconnecting — declares them the loser without touching
+            // any other online-state handling (rematch, teardown, etc. all
+            // continue to work exactly as they do for a normal resign).
+            function handleDisconnectTimeout(player) {
+                if (gameOver || player.finished) return;
+                showToast(fmt(t('disconnectTimeoutToast'), { name: playerDisplayName(player) }));
+                if (gameMode === '4p') {
+                    performForfeit4p(player);
+                    return
+                }
+                onlineState.peerLeft = !0;
+                gameOver = !0;
+                pendingWallPos = null;
+                wallPreviewPos = null;
+                hideWallConfirm();
+                updateActivePlayerUI();
+                draw();
+                const winner = players.find(p => p.id !== player.id);
+                setTimeout(() => showGameOverDialog(winner, player), 50)
+            }
+
+            function startDisconnectCountdown(player) {
+                if (gameOver || player.forfeited || player.finished) return;
+                if (onlineDisconnectTimers[player.id]) return; // already counting down
+                showToast(fmt2('{name} disconnected', playerDisplayName(player)));
+                const timer = { remaining: DISCONNECT_GRACE_SECONDS, intervalId: null };
+                onlineDisconnectTimers[player.id] = timer;
+                updateDisconnectBanner();
+                timer.intervalId = setInterval(() => {
+                    timer.remaining -= 1;
+                    if (timer.remaining <= 0) {
+                        clearInterval(timer.intervalId);
+                        delete onlineDisconnectTimers[player.id];
+                        updateDisconnectBanner();
+                        handleDisconnectTimeout(player);
+                        return
+                    }
+                    updateDisconnectBanner()
+                }, 1000)
+            }
+
             function onOnlinePresenceChange(playersObj) {
                 if (!onlineState.active) return;
                 const maxP = onlineMaxPlayers();
@@ -867,22 +974,31 @@
                     if (i === onlineState.localPlayerId) continue;
                     const p = players.find(pl => pl.id === i);
                     const other = playersObj && playersObj[i];
-                    if (p && !p.forfeited && !p.finished && other && other.connected === !1) {
-                        if (gameMode === '4p') {
-                            performForfeit4p(p);
-                            showToast(fmt2('{name} disconnected', playerDisplayName(p)))
-                        } else if (!onlineState.peerLeft) {
-                            onlineState.peerLeft = !0;
-                            if (typeof gameOver !== 'undefined' && gameOver) {
-                                showToast('Opponent left the game');
-                                refreshGameOverDialogOnlineState()
-                            } else {
-                                showToast('Opponent disconnected');
-                                teardownOnline(!1);
-                                goHome()
-                            }
+                    if (!p) continue;
+                    const isConnected = !other || other.connected !== !1;
+                    if (isConnected) {
+                        if (onlineDisconnectTimers[p.id]) {
+                            // Came back before the countdown ran out — clear
+                            // it and carry on as if nothing happened.
+                            clearDisconnectCountdown(p.id);
+                            showToast(fmt(t('disconnectReconnectedToast'), { name: playerDisplayName(p) }))
                         }
+                        continue
                     }
+                    // Disconnected.
+                    if (gameOver) {
+                        // Match already decided (e.g. still on the game-over
+                        // screen) — no countdown needed, just reflect it in
+                        // the dialog like before.
+                        if (!onlineState.peerLeft) {
+                            onlineState.peerLeft = !0;
+                            showToast('Opponent left the game');
+                            refreshGameOverDialogOnlineState()
+                        }
+                        continue
+                    }
+                    if (p.forfeited || p.finished) continue;
+                    startDisconnectCountdown(p)
                 }
             }
 
@@ -894,6 +1010,7 @@
                 onlineState.active = !0;
                 onlineState.mode = mode;
                 onlineState.peerLeft = !1;
+                clearAllDisconnectCountdowns();
                 currentTurnTimerSeconds = onlineState.timerSeconds || DEFAULT_TIMER_SECONDS;
                 document.getElementById('name-entry-view').style.display = 'none';
                 onlineSetupView.style.display = 'none';
@@ -2381,7 +2498,11 @@
             function updateTimerAvailabilityForGameType() {
                 const noTimerChip = document.querySelector('#timer-chip-group .no-timer-chip');
                 if (!noTimerChip) return;
-                noTimerChip.classList.toggle('locked', selectedGameTypeOnline);
+                // Online games always run on a timer — the "No timer" chip is
+                // removed from the picker entirely (not just disabled) when
+                // playing online. Offline keeps it as a normal option.
+                noTimerChip.style.display = selectedGameTypeOnline ? 'none' : '';
+                noTimerChip.classList.remove('locked');
                 if (selectedGameTypeOnline && selectedTimerSeconds === 0) setSelectedTimer(DEFAULT_TIMER_SECONDS)
             }
 
@@ -3588,6 +3709,7 @@
             function restartSameGame() {
                 hideGameOverOverlay();
                 resetOnlineRematchState();
+                clearAllDisconnectCountdowns();
                 initGame(gameMode);
                 if (onlineState.active) {
                     applyOnlineIdentitiesToPlayers();

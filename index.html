@@ -148,6 +148,7 @@
     </div>
 
     <div id="toast-container"></div>
+    <div id="disconnect-banner" class="disconnect-banner" style="display:none"></div>
 
     <div id="start-overlay">
         <div class="start-card" id="mode-select-view">
@@ -156,22 +157,19 @@
             <button class="mode-btn" id="btn-home-online">
                 <div class="mode-icon icon-online">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14.5 14.5 0 0 1 0 18"/><path d="M12 3a14.5 14.5 0 0 0 0 18"/><path d="M4.5 7.5h15"/><path d="M4.5 16.5h15"/></svg>
-                    <span class="mode-badge-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8 15.8a6 6 0 0 1 8 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
-                    </span>
                 </div>
                 <div class="mode-text">
                     <div class="t" id="home-online-title">Online</div>
-                    <div class="d" id="home-online-desc">Play with a friend remotely; one creates a room, the other joins with a code</div>
+                    <div class="d" id="home-online-desc">Challenge a friend in real time — create a room or join with a code</div>
                 </div>
             </button>
             <button class="mode-btn" id="btn-home-offline">
                 <div class="mode-icon icon-offline">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="13" r="1" fill="currentColor"/><circle cx="18" cy="11" r="1" fill="currentColor"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.544-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.152A4 4 0 0 0 17.32 5z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.4" width="10" height="19.2" rx="2.3"/><line x1="10" y1="18.3" x2="14" y2="18.3"/><path d="M3.2 8.6c-.9 1.6-.9 5.2 0 6.8" stroke-width="1.8"/><path d="M20.8 8.6c.9 1.6.9 5.2 0 6.8" stroke-width="1.8"/></svg>
                 </div>
                 <div class="mode-text">
                     <div class="t" id="home-offline-title">Offline</div>
-                    <div class="d" id="home-offline-desc">Pass-and-play on this device — no internet needed</div>
+                    <div class="d" id="home-offline-desc">Local pass-and-play on one device — no internet required</div>
                 </div>
             </button>
         </div>
@@ -313,7 +311,7 @@
             <div class="online-mode-grid" id="online-create-mode-pick" style="display:none">
                 <button class="online-mode-chip" id="btn-online-pick-2p">
                     <span class="omc-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="12" r="3.2"/><circle cx="17.5" cy="12" r="3.2"/><path d="M10.3 12h3.4"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="19" y1="19" x2="5" y2="5"/><path d="M7.3 16.7l1.9-1.9M16.7 16.7l-1.9-1.9" stroke-width="2.5"/><circle cx="5" cy="19" r="1.15" fill="currentColor" stroke="none"/><circle cx="19" cy="19" r="1.15" fill="currentColor" stroke="none"/></svg>
                     </span>
                     <span class="t" id="online-pick-2p-label">1 vs 1</span>
                 </button>
@@ -477,28 +475,52 @@
             <h1 id="online-lobby-title">Set Name &amp; Avatar</h1>
             <p class="subtitle" id="online-lobby-desc">You have up to 15 seconds to set your name and avatar color</p>
             <div id="online-lobby-countdown"><span id="online-lobby-countdown-num">15</span></div>
-            <div class="player-setup-card">
-                <div class="name-input-row">
-                    <span class="avatar-preview" id="avatar-preview-online-me" style="background:#E74C3C"></span>
-                    <input type="text" id="input-name-online-me" maxlength="13" placeholder="">
+
+            <div class="duel-row" id="duel-row">
+                <div class="player-setup-card duel-seat duel-seat-me" id="online-lobby-me-card">
+                    <span class="duel-you-tag" id="duel-you-tag">You</span>
+                    <div class="duel-avatar-wrap">
+                        <span class="avatar-preview duel-avatar" id="avatar-preview-online-me" style="background:#E74C3C"></span>
+                        <span class="ready-check-badge" id="ready-check-me">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+                        </span>
+                    </div>
+                    <div class="name-input-row">
+                        <input type="text" id="input-name-online-me" maxlength="13" placeholder="">
+                    </div>
                     <span class="role-live-badge" id="role-live-badge-me" style="display:none"></span>
+                    <div class="customize-row">
+                        <div class="swatch-group" id="swatches-online-me"></div>
+                    </div>
                 </div>
-                <div class="customize-row">
-                    <div class="swatch-group" id="swatches-online-me"></div>
-                </div>
-            </div>
-            <div class="player-setup-card online-lobby-opp-card" id="online-lobby-opp1-card">
-                <div class="name-input-row">
-                    <span class="avatar-preview" id="avatar-preview-online-opp" style="background:#3498DB"></span>
-                    <span id="name-online-opp" style="font-weight:700;font-size:15px;"></span>
+
+                <div class="duel-vs" id="duel-vs"><span>VS</span></div>
+
+                <div class="player-setup-card duel-seat online-lobby-opp-card" id="online-lobby-opp1-card">
+                    <span class="duel-ready-badge" id="duel-ready-badge-opp">
+                        <span class="drb-dot"></span><span class="drb-label" id="duel-ready-badge-opp-label">Not ready yet</span>
+                    </span>
+                    <div class="duel-avatar-wrap">
+                        <span class="avatar-preview duel-avatar" id="avatar-preview-online-opp" style="background:#3498DB"></span>
+                        <span class="ready-check-badge" id="ready-check-opp">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+                        </span>
+                    </div>
+                    <div class="name-input-row">
+                        <span id="name-online-opp" class="duel-opp-name"></span>
+                    </div>
                     <span class="role-live-badge" id="role-live-badge-opp" style="display:none"></span>
                     <span class="forfeit-badge" id="forfeit-badge-online-opp1" style="display:none">—</span>
                 </div>
             </div>
+
             <div class="player-setup-card online-lobby-opp-card" id="online-lobby-opp2-card" style="display:none">
                 <div class="name-input-row">
                     <span class="avatar-preview" id="avatar-preview-online-opp2" style="background:#2ECC71"></span>
                     <span id="name-online-opp2" style="font-weight:700;font-size:15px;"></span>
+                    <span class="duel-ready-badge duel-ready-badge-inline" id="duel-ready-badge-opp2">
+                        <span class="drb-dot"></span><span class="drb-label" id="duel-ready-badge-opp2-label">Not ready</span>
+                    </span>
                     <span class="forfeit-badge" id="forfeit-badge-online-opp2" style="display:none">—</span>
                 </div>
             </div>
@@ -506,9 +528,13 @@
                 <div class="name-input-row">
                     <span class="avatar-preview" id="avatar-preview-online-opp3" style="background:#F1C40F"></span>
                     <span id="name-online-opp3" style="font-weight:700;font-size:15px;"></span>
+                    <span class="duel-ready-badge duel-ready-badge-inline" id="duel-ready-badge-opp3">
+                        <span class="drb-dot"></span><span class="drb-label" id="duel-ready-badge-opp3-label">Not ready</span>
+                    </span>
                     <span class="forfeit-badge" id="forfeit-badge-online-opp3" style="display:none">—</span>
                 </div>
             </div>
+
             <div class="hunter-role-pick" id="hunter-role-pick-section" style="display:none">
                 <p class="hunter-role-pick-label" id="hunter-role-pick-label">Pick your role</p>
                 <div class="hunter-role-options">
@@ -522,7 +548,30 @@
                     </button>
                 </div>
             </div>
+
+            <button type="button" class="online-ready-btn" id="btn-online-ready">
+                <span class="orb-icon orb-icon-idle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+                </span>
+                <span class="orb-icon orb-icon-spin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="42 14"/></svg>
+                </span>
+                <span id="online-ready-btn-label">Ready</span>
+            </button>
             <p id="online-lobby-hint" style="color:var(--text-muted);font-size:12px;text-align:center;margin-top:2px;">You can only change your own name and color</p>
+        </div>
+    </div>
+
+    <div id="online-starting-overlay">
+        <div class="starting-card">
+            <div class="starting-duo">
+                <span class="starting-avatar" id="starting-avatar-me"></span>
+                <span class="starting-vs">VS</span>
+                <span class="starting-avatar" id="starting-avatar-opp"></span>
+                <span class="starting-spin-ring"></span>
+            </div>
+            <h2 id="starting-title">Game is starting…</h2>
+            <p id="starting-sub">Everyone is ready — good luck!</p>
         </div>
     </div>
 
