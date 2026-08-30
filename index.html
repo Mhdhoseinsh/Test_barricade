@@ -153,15 +153,6 @@
         <div class="start-card" id="mode-select-view">
             <h1 style="text-align: center;" id="mode-title">Route 9</h1>
             <p class="subtitle" id="start-subtitle">Choose how you want to play</p>
-            <button class="mode-btn" id="btn-home-offline">
-                <div class="mode-icon icon-offline">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="13" r="1" fill="currentColor"/><circle cx="18" cy="11" r="1" fill="currentColor"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.544-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.152A4 4 0 0 0 17.32 5z"/></svg>
-                </div>
-                <div class="mode-text">
-                    <div class="t" id="home-offline-title">Offline</div>
-                    <div class="d" id="home-offline-desc">Pass-and-play on this device — no internet needed</div>
-                </div>
-            </button>
             <button class="mode-btn" id="btn-home-online">
                 <div class="mode-icon icon-online">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14.5 14.5 0 0 1 0 18"/><path d="M12 3a14.5 14.5 0 0 0 0 18"/><path d="M4.5 7.5h15"/><path d="M4.5 16.5h15"/></svg>
@@ -174,13 +165,18 @@
                     <div class="d" id="home-online-desc">Play with a friend remotely; one creates a room, the other joins with a code</div>
                 </div>
             </button>
+            <button class="mode-btn" id="btn-home-offline">
+                <div class="mode-icon icon-offline">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="13" r="1" fill="currentColor"/><circle cx="18" cy="11" r="1" fill="currentColor"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.544-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.152A4 4 0 0 0 17.32 5z"/></svg>
+                </div>
+                <div class="mode-text">
+                    <div class="t" id="home-offline-title">Offline</div>
+                    <div class="d" id="home-offline-desc">Pass-and-play on this device — no internet needed</div>
+                </div>
+            </button>
         </div>
 
         <div class="start-card" id="offline-mode-pick-view" style="display:none">
-            <button class="online-back-link" id="btn-offline-pick-back">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
-                <span id="offline-pick-back-label">Back</span>
-            </button>
             <h1 style="text-align: center;" id="offline-pick-title">Offline</h1>
             <p class="subtitle" id="offline-pick-subtitle">Pass-and-play — choose a mode</p>
             <button class="mode-btn" id="btn-start-classic">
@@ -201,6 +197,10 @@
                     <div class="t" id="mode-hunter-title">Hunter &amp; Escaper</div>
                     <div class="d" id="mode-hunter-desc">One escapes, one hunts — first to win takes it</div>
                 </div>
+            </button>
+            <button class="online-back-link" id="btn-offline-pick-back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                <span id="offline-pick-back-label">Back</span>
             </button>
         </div>
 
@@ -310,15 +310,24 @@
                     <span id="online-name-lock-desc">After you create or join a room, you'll pick your name and avatar color in the lobby.</span>
                 </span>
             </div>
-            <div class="online-choice-grid online-create-mode-pick" id="online-create-mode-pick" style="display:none">
-                <button class="mode-btn" id="btn-online-pick-2p">
-                    <div class="mode-text"><div class="t" id="online-pick-2p-label">Classic 1 vs 1</div></div>
+            <div class="online-mode-grid" id="online-create-mode-pick" style="display:none">
+                <button class="online-mode-chip" id="btn-online-pick-2p">
+                    <span class="omc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </span>
+                    <span class="t" id="online-pick-2p-label">1 vs 1</span>
                 </button>
-                <button class="mode-btn" id="btn-online-pick-4p">
-                    <div class="mode-text"><div class="t" id="online-pick-4p-label">4 Players</div></div>
+                <button class="online-mode-chip" id="btn-online-pick-4p">
+                    <span class="omc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                    </span>
+                    <span class="t" id="online-pick-4p-label">4 Players</span>
                 </button>
-                <button class="mode-btn" id="btn-online-pick-hunter">
-                    <div class="mode-text"><div class="t" id="online-pick-hunter-label">Wolf and Sheep</div></div>
+                <button class="online-mode-chip" id="btn-online-pick-hunter">
+                    <span class="omc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
+                    </span>
+                    <span class="t" id="online-pick-hunter-label">Wolf &amp; Sheep</span>
                 </button>
             </div>
             <div class="timer-select-wrap" id="timer-select-wrap">

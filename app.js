@@ -290,6 +290,7 @@
                     nameEntryTitle: 'Enter Player Names',
                     startGameBtn: 'Start Game',
                     createRoomBtn: 'Create Room',
+                    onlineCreateTitle: 'Set Up Your Room',
                     backBtn: 'Back',
                     toastNoWalls: 'You have no walls left to place!',
                     toastWallExists: 'There is already a wall in this spot.',
@@ -705,11 +706,10 @@
             function selectOnlineCreateMode(mode) {
                 onlineState.mode = mode;
                 selectedMode = mode;
-                document.querySelectorAll('#online-create-mode-pick .mode-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#online-create-mode-pick .online-mode-chip').forEach(b => b.classList.remove('active'));
                 const btnId = mode === '4p' ? 'btn-online-pick-4p' : (mode === 'hunter' ? 'btn-online-pick-hunter' : 'btn-online-pick-2p');
                 const btn = document.getElementById(btnId);
-                if (btn) btn.classList.add('active');
-                setTextContent('name-entry-title', t(mode === 'hunter' ? 'modeHunterTitle' : 'modeClassicShort'))
+                if (btn) btn.classList.add('active')
             }
             function showOnlineCreateSetup() {
                 onlineChoiceView.style.display = 'none';
@@ -717,9 +717,10 @@
                 nameEntryOrigin = 'online';
                 showNameEntry(onlineState.mode || '2p', !1);
                 setGameType(!0);
-                document.getElementById('online-create-mode-pick').style.display = 'flex';
+                document.getElementById('online-create-mode-pick').style.display = 'grid';
                 document.getElementById('online-code-entry-wrap').style.display = 'none';
                 selectOnlineCreateMode(onlineState.mode || '2p');
+                setTextContent('name-entry-title', t('onlineCreateTitle'));
                 setTextContent('btn-name-confirm', t('createRoomBtn'))
             }
             document.getElementById('btn-online-pick-2p').onclick = () => selectOnlineCreateMode('2p');
