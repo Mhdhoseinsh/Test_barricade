@@ -338,14 +338,7 @@
                     timerUnitMin: 'min',
                     timerNoneLabel: 'No timer',
                 onlineCodeEntryLabel: 'Join with Code',
-                timeUpToast: "{name}'s time ran out — turn forfeited",
-                onlineReadyLabel: 'Ready',
-                onlineWaitingLabel: 'Waiting for others…',
-                onlineReadyBadgeReady: 'Ready',
-                onlineReadyBadgeWaiting: 'Not ready yet',
-                onlineStartingTitle: 'Game is starting…',
-                onlineStartingSub: 'Everyone is ready — good luck!',
-                onlinePickRoleFirstToast: 'Pick a role first'
+                timeUpToast: "{name}'s time ran out — turn forfeited"
             };
             // English-only build: language switching has been removed.
 
@@ -554,28 +547,8 @@
                 timer: null,
                 secondsLeft: ONLINE_LOBBY_SECONDS_DEFAULT,
                 totalSeconds: ONLINE_LOBBY_SECONDS_DEFAULT,
-                deadline: null,
-                meReady: false,
-                readyById: {}
+                deadline: null
             };
-            // How long the synchronized "Game is starting…" spinner is shown
-            // for once every player has pressed Ready, before the board
-            // actually opens. Both devices detect "everyone ready" within a
-            // network round-trip of each other, so this short shared delay
-            // is what makes the two screens feel like they open together
-            // instead of one player being dropped in first.
-            const ONLINE_STARTING_OVERLAY_MS = 1300;
-            let onlineLobbyFinalizing = false;
-
-            function resetOnlineReady() {
-                onlineLobby.meReady = false;
-                onlineLobby.readyById = {};
-                onlineLobbyFinalizing = false;
-                const btn = document.getElementById('btn-online-ready');
-                if (btn) btn.classList.remove('is-waiting');
-                const overlay = document.getElementById('online-starting-overlay');
-                if (overlay) overlay.classList.remove('visible')
-            }
 
             // Each player's chosen role during the Wolf & Sheep lobby window
             // ('escaper' | 'hunter' | null). `opp` arrives via the 'role-pick'
@@ -669,7 +642,6 @@
                 onlineRematch.requestedByOpponent = !1;
                 onlineState.hunterRoleByPlayerId = null;
                 resetOnlineHunterPick();
-                resetOnlineReady();
                 if (onlineLobby.timer) { clearInterval(onlineLobby.timer); onlineLobby.timer = null }
                 stopTurnTimer();
                 turnTimerPlayerId = null;
@@ -968,10 +940,6 @@
                     } else if (data.type === 'role-pick') {
                         onlineHunterPick.opp = data.role;
                         updateHunterPickUI(onlineState.mode)
-                    } else if (data.type === 'ready') {
-                        onlineLobby.readyById[data.id] = !!data.ready;
-                        updateReadyUI();
-                        maybeAdvanceFromReady()
                     } else if (data.type === 'timer-sync') {
                         // Authoritative deadline from whichever device's player
                         // just started their turn — replaces our own
@@ -1017,18 +985,9 @@
             // not a per-turn reset. Only the current player's bank ticks down; it pauses
             // on their opponent's turn and resumes exactly where it left off.
             const DEFAULT_TIMER_SECONDS = 120;
-            // The player's last-picked turn timer (offline or online) is
-            // remembered across visits, so re-opening the app defaults to
-            // whatever they used last time instead of always resetting to
-            // the hardcoded 2-minute default.
-            function getSavedTimerSeconds() {
-                const raw = localStorage.getItem('barricade-timer-seconds');
-                const v = parseInt(raw, 10);
-                return Number.isFinite(v) && v >= 0 ? v : DEFAULT_TIMER_SECONDS
-            }
             let selectedGameTypeOnline = false;
-            let selectedTimerSeconds = getSavedTimerSeconds();
-            let currentTurnTimerSeconds = selectedTimerSeconds;
+            let selectedTimerSeconds = DEFAULT_TIMER_SECONDS;
+            let currentTurnTimerSeconds = DEFAULT_TIMER_SECONDS;
             let turnTimerInterval = null;
             let turnTimerPlayerId = null;
             // Absolute real-world timestamp (Date.now()) at which the current
@@ -1434,103 +1393,6 @@
                 updateHunterPickUI(onlineState.mode)
             }
 
-            // ================= ONLINE LOBBY — READY UP =================
-            function requiredLobbyIds(mode) {
-                const maxP = mode === '4p' ? 4 : 2;
-                const ids = [];
-                for (let i = 0; i < maxP; i++) ids.push(i);
-                return ids
-            }
-
-            function isIdReady(id) {
-                return id === onlineState.localPlayerId ? !!onlineLobby.meReady : !!onlineLobby.readyById[id]
-            }
-
-            function allLobbyPlayersReady(mode) {
-                return requiredLobbyIds(mode).every(isIdReady)
-            }
-
-            // Reflects each player's ready state onto their seat/card: a
-            // glowing border + a small check badge on the avatar, plus the
-            // little "Ready / Not ready yet" chip on opponents' cards, and
-            // this device's own Ready button switching into its "waiting"
-            // state once pressed.
-            function updateReadyUI() {
-                const mode = onlineState.mode;
-                const meCard = document.getElementById('online-lobby-me-card');
-                const meCheck = document.getElementById('ready-check-me');
-                if (meCard) meCard.classList.toggle('seat-ready', onlineLobby.meReady);
-                if (meCheck) meCheck.classList.toggle('visible', onlineLobby.meReady);
-
-                const readyBtn = document.getElementById('btn-online-ready');
-                if (readyBtn) {
-                    readyBtn.classList.toggle('is-waiting', onlineLobby.meReady);
-                    setTextContent('online-ready-btn-label', onlineLobby.meReady ? t('onlineWaitingLabel') : t('onlineReadyLabel'))
-                }
-
-                const otherIds = lobbyOtherIds(mode);
-                OPP_CARD_ELS.forEach((els, idx) => {
-                    if (idx >= otherIds.length) return;
-                    const id = otherIds[idx];
-                    const ready = isIdReady(id);
-                    const cardEl = document.getElementById(els.card);
-                    if (cardEl) cardEl.classList.toggle('seat-ready', ready);
-                    if (idx === 0) {
-                        const check = document.getElementById('ready-check-opp');
-                        if (check) check.classList.toggle('visible', ready)
-                    }
-                    const badgeSuffix = idx === 0 ? 'opp' : 'opp' + (idx + 1);
-                    const badge = document.getElementById('duel-ready-badge-' + badgeSuffix);
-                    const badgeLabel = document.getElementById('duel-ready-badge-' + badgeSuffix + '-label');
-                    if (badge) badge.classList.toggle('is-ready', ready);
-                    if (badgeLabel) badgeLabel.textContent = ready ? t('onlineReadyBadgeReady') : t('onlineReadyBadgeWaiting')
-                })
-            }
-
-            function showOnlineStartingOverlay() {
-                const overlay = document.getElementById('online-starting-overlay');
-                if (!overlay) return;
-                const meAvatar = document.getElementById('starting-avatar-me');
-                const oppAvatar = document.getElementById('starting-avatar-opp');
-                if (meAvatar) meAvatar.style.background = onlineLobby.me.color;
-                const oppId = lobbyOtherIds(onlineState.mode)[0];
-                const oppData = (oppId !== undefined && onlineLobby.othersById[oppId]) || {};
-                if (oppAvatar) oppAvatar.style.background = oppData.color || customColor(slotNameForId(onlineState.mode, oppId));
-                setTextContent('starting-title', t('onlineStartingTitle'));
-                setTextContent('starting-sub', t('onlineStartingSub'));
-                overlay.classList.add('visible')
-            }
-
-            // Called whenever readiness changes (mine or a message from the
-            // opponent) or the setup countdown times out. Once every
-            // required seat is ready, stops the setup countdown, shows the
-            // synchronized "starting" spinner for a fixed short delay, and
-            // only then actually opens the board — see ONLINE_STARTING_OVERLAY_MS.
-            function maybeAdvanceFromReady() {
-                if (onlineLobbyFinalizing) return;
-                const mode = onlineState.mode;
-                if (!allLobbyPlayersReady(mode)) return;
-                onlineLobbyFinalizing = true;
-                if (onlineLobby.timer) { clearInterval(onlineLobby.timer); onlineLobby.timer = null }
-                showOnlineStartingOverlay();
-                setTimeout(() => finalizeOnlineLobby(mode), ONLINE_STARTING_OVERLAY_MS)
-            }
-
-            function setMeReady(ready) {
-                if (ready && onlineState.mode === 'hunter' && !onlineHunterPick.me) {
-                    showToast(t('onlinePickRoleFirstToast'));
-                    return
-                }
-                onlineLobby.meReady = ready;
-                sendOnline({ type: 'ready', id: onlineState.localPlayerId, ready });
-                updateReadyUI();
-                if (ready) maybeAdvanceFromReady()
-            }
-
-            const btnOnlineReady = document.getElementById('btn-online-ready');
-            if (btnOnlineReady) btnOnlineReady.onclick = () => setMeReady(!onlineLobby.meReady);
-            // ================= END READY UP =================
-
             function showOnlineLobby(mode) {
                 const meSlot = slotNameForId(mode, onlineState.localPlayerId);
                 onlineLobby.mySlot = meSlot;
@@ -1542,15 +1404,12 @@
                 };
                 onlineLobby.othersById = {};
                 resetOnlineHunterPick();
-                resetOnlineReady();
                 onlineState.hunterRoleByPlayerId = null;
                 showStartScreen('online-lobby-view');
                 const lobbyView = document.getElementById('online-lobby-view');
                 startOverlay.style.display = 'flex';
                 appEl.classList.remove('visible');
                 setThemeColor('#000000');
-                const duelRow = document.getElementById('duel-row');
-                if (duelRow) duelRow.classList.toggle('duel-4p', mode === '4p');
                 if (onlineLobbyNameInput) {
                     onlineLobbyNameInput.value = onlineLobby.me.name;
                     onlineLobbyNameInput.placeholder = placeholderForId(mode, onlineState.localPlayerId)
@@ -1558,7 +1417,6 @@
                 refreshOnlineLobbySwatchUI();
                 updateOnlineOppUI();
                 updateHunterPickUI(mode);
-                updateReadyUI();
                 broadcastOnlineProfile();
                 onlineLobby.totalSeconds = onlineLobbySecondsFor(mode);
                 onlineLobby.secondsLeft = onlineLobby.totalSeconds;
@@ -1583,14 +1441,7 @@
                 if (remainingMs <= 0) {
                     clearInterval(onlineLobby.timer);
                     onlineLobby.timer = null;
-                    // Safety net: if the setup window runs out before both
-                    // sides pressed Ready, don't leave anyone stuck waiting
-                    // forever — proceed anyway with whatever was picked so
-                    // far (same fallback the fixed countdown always had).
-                    if (onlineLobbyFinalizing) return;
-                    onlineLobbyFinalizing = true;
-                    showOnlineStartingOverlay();
-                    setTimeout(() => finalizeOnlineLobby(mode), ONLINE_STARTING_OVERLAY_MS)
+                    finalizeOnlineLobby(mode)
                 }
             }
 
@@ -1684,8 +1535,6 @@
             function finalizeOnlineLobby(mode) {
                 const lobbyView = document.getElementById('online-lobby-view');
                 if (lobbyView) lobbyView.style.display = 'none';
-                const startingOverlay = document.getElementById('online-starting-overlay');
-                if (startingOverlay) startingOverlay.classList.remove('visible');
                 if (mode === 'hunter') {
                     const roles = resolveHunterRoles();
                     onlineState.hunterRoleByPlayerId = { [roles.escaperId]: 'escaper', [roles.hunterId]: 'hunter' };
@@ -1805,12 +1654,6 @@
                 setTextContent('hunter-role-btn-hunter-label', t('roleHunter'));
                 setTextContent('hunter-reveal-title', t('hunterRevealTitle'));
                 setTextContent('hunter-reveal-sub', t('hunterRevealSub'));
-                setTextContent('online-ready-btn-label', t('onlineReadyLabel'));
-                setTextContent('duel-ready-badge-opp-label', t('onlineReadyBadgeWaiting'));
-                setTextContent('duel-ready-badge-opp2-label', t('onlineReadyBadgeWaiting'));
-                setTextContent('duel-ready-badge-opp3-label', t('onlineReadyBadgeWaiting'));
-                setTextContent('starting-title', t('onlineStartingTitle'));
-                setTextContent('starting-sub', t('onlineStartingSub'));
                 setTextContent('mode-title', t('modeTitle'));
                 const dpn = translations.defaultPlayerNames;
                 const ph = (id, idx) => {
@@ -2481,29 +2324,19 @@
                 const noTimerChip = document.querySelector('#timer-chip-group .no-timer-chip');
                 if (!noTimerChip) return;
                 noTimerChip.classList.toggle('locked', selectedGameTypeOnline);
-                if (selectedGameTypeOnline && selectedTimerSeconds === 0) {
-                    const saved = getSavedTimerSeconds();
-                    setSelectedTimer(saved > 0 ? saved : DEFAULT_TIMER_SECONDS)
-                }
+                if (selectedGameTypeOnline && selectedTimerSeconds === 0) setSelectedTimer(DEFAULT_TIMER_SECONDS)
             }
 
-            function setSelectedTimer(secs, persist) {
+            function setSelectedTimer(secs) {
                 if (secs === 0 && selectedGameTypeOnline) return;
                 selectedTimerSeconds = secs;
                 document.querySelectorAll('#timer-chip-group .timer-chip').forEach(chip => {
                     chip.classList.toggle('active', parseInt(chip.dataset.secs, 10) === secs)
-                });
-                // Only persist when the change came from an explicit tap on a
-                // chip (persist !== false) — not from the automatic re-sync
-                // that happens every time the name-entry screen is (re)opened.
-                if (persist !== false) localStorage.setItem('barricade-timer-seconds', String(secs))
+                })
             }
             document.querySelectorAll('#timer-chip-group .timer-chip').forEach(chip => {
                 chip.onclick = () => setSelectedTimer(parseInt(chip.dataset.secs, 10))
             });
-            // Sync the chip highlight with whatever was saved from a
-            // previous visit as soon as the chips exist in the DOM.
-            setSelectedTimer(selectedTimerSeconds, false);
 
             function switchClassicSubMode(mode) {
                 classicSubMode = mode;
@@ -2524,7 +2357,7 @@
                 document.getElementById('online-create-mode-pick').style.display = 'none';
                 document.getElementById('online-code-entry-wrap').style.display = 'none';
                 setGameType(!1);
-                setSelectedTimer(getSavedTimerSeconds(), false);
+                setSelectedTimer(DEFAULT_TIMER_SECONDS);
                 const pcToggle = document.getElementById('player-count-toggle');
                 if (isClassic) {
                     pcToggle.style.display = 'flex';
