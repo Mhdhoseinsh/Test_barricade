@@ -626,8 +626,7 @@
             // old "back to the create/join picker" behavior, since that
             // in-between picker screen is no longer part of the flow.
             function backToOnlineSettings() {
-                onlineSetupView.style.display = 'none';
-                document.getElementById('name-entry-view').style.display = 'block'
+                showStartScreen('name-entry-view')
             }
 
             function teardownOnline(notifyPeer) {
@@ -673,20 +672,31 @@
                 canvas.classList.toggle('board-flipped', isBoardFlippedForMe())
             }
 
+            // Every top-level screen inside #start-overlay. Whenever the UI
+            // moves to a screen, route it through showStartScreen() so all
+            // the others are force-hidden — this guarantees two screens can
+            // never end up visible side-by-side (the flex layout in
+            // #start-overlay lays out any visible siblings next to each
+            // other), no matter which button/path got us here.
+            const ALL_START_SCREENS = ['mode-select-view', 'offline-mode-pick-view', 'online-setup-view', 'name-entry-view', 'online-lobby-view'];
+            function showStartScreen(id) {
+                ALL_START_SCREENS.forEach(sid => {
+                    const el = document.getElementById(sid);
+                    if (el) el.style.display = (sid === id) ? 'block' : 'none'
+                })
+            }
+
             document.getElementById('btn-home-online').onclick = () => {
                 onlineEntryFromNameEntry = false;
                 nameEntryOrigin = 'online';
-                document.getElementById('mode-select-view').style.display = 'none';
-                onlineSetupView.style.display = 'block';
+                showStartScreen('online-setup-view');
                 resetOnlineSetupUI()
             };
             document.getElementById('btn-home-offline').onclick = () => {
-                document.getElementById('mode-select-view').style.display = 'none';
-                document.getElementById('offline-mode-pick-view').style.display = 'block'
+                showStartScreen('offline-mode-pick-view')
             };
             document.getElementById('btn-offline-pick-back').onclick = () => {
-                document.getElementById('offline-mode-pick-view').style.display = 'none';
-                document.getElementById('mode-select-view').style.display = 'block'
+                showStartScreen('mode-select-view')
             };
             // "Create Room" card -> one screen with mode buttons + timer,
             // all in the same view. Mode can be switched right here without
@@ -716,12 +726,11 @@
             document.getElementById('btn-online-pick-4p').onclick = () => selectOnlineCreateMode('4p');
             document.getElementById('btn-online-pick-hunter').onclick = () => selectOnlineCreateMode('hunter');
             document.getElementById('btn-online-back1').onclick = () => {
-                onlineSetupView.style.display = 'none';
                 if (onlineEntryFromNameEntry) {
                     onlineEntryFromNameEntry = false;
-                    document.getElementById('name-entry-view').style.display = 'block'
+                    showStartScreen('name-entry-view')
                 } else {
-                    document.getElementById('mode-select-view').style.display = 'block'
+                    showStartScreen('mode-select-view')
                 }
                 resetOnlineSetupUI()
             };
@@ -1395,11 +1404,8 @@
                 onlineLobby.othersById = {};
                 resetOnlineHunterPick();
                 onlineState.hunterRoleByPlayerId = null;
-                document.getElementById('mode-select-view').style.display = 'none';
-                onlineSetupView.style.display = 'none';
-                document.getElementById('name-entry-view').style.display = 'none';
+                showStartScreen('online-lobby-view');
                 const lobbyView = document.getElementById('online-lobby-view');
-                lobbyView.style.display = 'block';
                 startOverlay.style.display = 'flex';
                 appEl.classList.remove('visible');
                 setThemeColor('#000000');
@@ -2346,9 +2352,7 @@
 
             function showNameEntry(mode, isClassic) {
                 selectedMode = mode;
-                document.getElementById('mode-select-view').style.display = 'none';
-                document.getElementById('offline-mode-pick-view').style.display = 'none';
-                document.getElementById('name-entry-view').style.display = 'block';
+                showStartScreen('name-entry-view');
                 document.getElementById('online-create-mode-pick').style.display = 'none';
                 document.getElementById('online-code-entry-wrap').style.display = 'none';
                 setGameType(!1);
@@ -2377,12 +2381,11 @@
                 setTextContent('name-entry-title', t(mode === 'hunter' ? 'modeHunterTitle' : 'modeClassicShort'))
             }
             document.getElementById('btn-name-back').onclick = () => {
-                document.getElementById('name-entry-view').style.display = 'none';
                 if (nameEntryOrigin === 'online') {
-                    onlineSetupView.style.display = 'block';
+                    showStartScreen('online-setup-view');
                     resetOnlineSetupUI()
                 } else {
-                    document.getElementById('offline-mode-pick-view').style.display = 'block'
+                    showStartScreen('offline-mode-pick-view')
                 }
             };
             document.getElementById('btn-name-confirm').onclick = () => {
@@ -2391,8 +2394,7 @@
                     onlineState.timerSeconds = selectedTimerSeconds;
                     onlineEntryFromNameEntry = !0;
                     const codeVal = onlineNameEntryCodeInput ? onlineNameEntryCodeInput.value.trim().toUpperCase() : '';
-                    document.getElementById('name-entry-view').style.display = 'none';
-                    onlineSetupView.style.display = 'block';
+                    showStartScreen('online-setup-view');
                     onlineModeSelectView.style.display = 'none';
                     onlineChoiceView.style.display = 'none';
                     onlineCreateView.style.display = 'none';
@@ -3535,12 +3537,7 @@
                 turnTimerPlayerId = null;
                 onlineEntryFromNameEntry = false;
                 if (onlineState.active) { teardownOnline(!0); resetOnlineSetupUI() }
-                document.getElementById('name-entry-view').style.display = 'none';
-                document.getElementById('offline-mode-pick-view').style.display = 'none';
-                onlineSetupView.style.display = 'none';
-                const lobbyView = document.getElementById('online-lobby-view');
-                if (lobbyView) lobbyView.style.display = 'none';
-                document.getElementById('mode-select-view').style.display = 'block';
+                showStartScreen('mode-select-view');
                 startOverlay.style.display = 'flex';
                 appEl.classList.remove('visible');
                 setThemeColor('#000000');
