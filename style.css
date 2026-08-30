@@ -259,7 +259,9 @@
         }
         .mode-icon.icon-offline {
             background: linear-gradient(135deg, #ff9d5c, #ee5a6f 70%);
-            box-shadow: 0 4px 14px rgb(238 90 111/.4), inset 0 1px 1px rgb(255 255 255/.25)
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            box-shadow: inset 0 1px 1px rgb(255 255 255/.25)
         }
         .online-mode-grid {
             display: grid;
@@ -309,11 +311,13 @@
         }
         .online-mode-chip.active {
             border-color: transparent;
-            background: linear-gradient(160deg, rgb(37 99 235/.22), rgb(37 99 235/.06));
-            box-shadow: 0 4px 16px rgb(37 99 235/.3)
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            box-shadow: none
         }
         .online-mode-chip.active .omc-icon {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background: rgb(255 255 255/.18);
             color: #fff
         }
         .online-mode-chip.active .t {
@@ -321,20 +325,20 @@
         }
         .mode-icon.icon-online {
             background: linear-gradient(135deg, #4facfe, #3a7bd5 70%);
-            box-shadow: 0 4px 14px rgb(58 123 213/.4), inset 0 1px 1px rgb(255 255 255/.25)
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            box-shadow: inset 0 1px 1px rgb(255 255 255/.25)
         }
-        .mode-btn:hover .mode-icon.icon-offline {
-            box-shadow: 0 6px 18px rgb(238 90 111/.55), inset 0 1px 1px rgb(255 255 255/.3)
-        }
+        .mode-btn:hover .mode-icon.icon-offline,
         .mode-btn:hover .mode-icon.icon-online {
-            box-shadow: 0 6px 18px rgb(58 123 213/.55), inset 0 1px 1px rgb(255 255 255/.3)
+            box-shadow: inset 0 1px 1px rgb(255 255 255/.35)
         }
         .mode-icon .mode-badge-icon {
             position: absolute;
-            bottom: -6px;
-            right: -6px;
-            width: 27px;
-            height: 27px;
+            bottom: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             background: var(--card-bg);
             border: 2px solid var(--card-bg);
@@ -345,12 +349,12 @@
             box-shadow: 0 2px 6px rgb(0 0 0/.45)
         }
         .mode-icon .mode-badge-icon svg {
-            width: 68%;
-            height: 68%
+            width: 92%;
+            height: 92%
         }
         html[dir="rtl"] .mode-icon .mode-badge-icon {
             right: auto;
-            left: -6px
+            left: -5px
         }
         /* ===== ONLINE SCREENS ===== */
         .forfeit-badge {
@@ -937,8 +941,10 @@
             left: 5px;
             width: calc(50% - 7px);
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
             border-radius: 11px;
-            box-shadow: 0 4px 16px rgb(37 99 235/.45);
+            box-shadow: none;
             transition: transform .32s cubic-bezier(.65, 0, .35, 1);
             z-index: 1
         }
@@ -1068,8 +1074,10 @@
         }
         .timer-chip.active {
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
             border-color: transparent;
-            box-shadow: 0 4px 14px rgb(37 99 235/.4)
+            box-shadow: none
         }
         .timer-chip.active .tc-num,
         .timer-chip.active .tc-unit {
