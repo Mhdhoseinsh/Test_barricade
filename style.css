@@ -250,12 +250,26 @@
            signal badge on the Online icon. */
         .mode-icon.icon-offline,
         .mode-icon.icon-online {
-            color: var(--text-main)
+            color: #fff
         }
         .mode-icon.icon-offline svg,
         .mode-icon.icon-online > svg {
             width: 56%;
             height: 56%
+        }
+        .mode-icon.icon-offline {
+            background: linear-gradient(135deg, #ff9d5c, #ee5a6f 70%);
+            box-shadow: 0 4px 14px rgb(238 90 111/.4), inset 0 1px 1px rgb(255 255 255/.25)
+        }
+        .mode-icon.icon-online {
+            background: linear-gradient(135deg, #4facfe, #3a7bd5 70%);
+            box-shadow: 0 4px 14px rgb(58 123 213/.4), inset 0 1px 1px rgb(255 255 255/.25)
+        }
+        .mode-btn:hover .mode-icon.icon-offline {
+            box-shadow: 0 6px 18px rgb(238 90 111/.55), inset 0 1px 1px rgb(255 255 255/.3)
+        }
+        .mode-btn:hover .mode-icon.icon-online {
+            box-shadow: 0 6px 18px rgb(58 123 213/.55), inset 0 1px 1px rgb(255 255 255/.3)
         }
         .mode-icon .mode-badge-icon {
             position: absolute;
