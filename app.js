@@ -289,6 +289,7 @@
                     confirmRepeat: 'Repeat this game with the same players?',
                     nameEntryTitle: 'Enter Player Names',
                     startGameBtn: 'Start Game',
+                    createRoomBtn: 'Create Room',
                     backBtn: 'Back',
                     toastNoWalls: 'You have no walls left to place!',
                     toastWallExists: 'There is already a wall in this spot.',
@@ -610,8 +611,8 @@
             }
 
             function resetOnlineSetupUI() {
-                onlineModeSelectView.style.display = 'block';
-                onlineChoiceView.style.display = 'none';
+                onlineModeSelectView.style.display = 'none';
+                onlineChoiceView.style.display = 'flex';
                 onlineCreateView.style.display = 'none';
                 onlineJoinView.style.display = 'none';
                 onlineJoinView.classList.remove('autoconnecting');
@@ -687,20 +688,33 @@
                 document.getElementById('offline-mode-pick-view').style.display = 'none';
                 document.getElementById('mode-select-view').style.display = 'block'
             };
-            // Picking a mode here now goes straight to the settings screen
-            // (timer + room-code field) instead of an extra "create or join"
-            // picker screen — one less step, and it's where the code field
-            // lives now.
-            function enterOnlinePresetSettings(mode) {
+            // "Create Room" card -> one screen with mode buttons + timer,
+            // all in the same view. Mode can be switched right here without
+            // leaving the screen; the room is only actually created when
+            // the Create Room button (btn-name-confirm) is pressed.
+            function selectOnlineCreateMode(mode) {
                 onlineState.mode = mode;
+                selectedMode = mode;
+                document.querySelectorAll('#online-create-mode-pick .mode-btn').forEach(b => b.classList.remove('active'));
+                const btnId = mode === '4p' ? 'btn-online-pick-4p' : (mode === 'hunter' ? 'btn-online-pick-hunter' : 'btn-online-pick-2p');
+                const btn = document.getElementById(btnId);
+                if (btn) btn.classList.add('active');
+                setTextContent('name-entry-title', t(mode === 'hunter' ? 'modeHunterTitle' : 'modeClassicShort'))
+            }
+            function showOnlineCreateSetup() {
+                onlineChoiceView.style.display = 'none';
                 onlineSetupView.style.display = 'none';
                 nameEntryOrigin = 'online';
-                showNameEntry(mode, mode !== 'hunter');
-                setGameType(!0)
+                showNameEntry(onlineState.mode || '2p', !1);
+                setGameType(!0);
+                document.getElementById('online-create-mode-pick').style.display = 'flex';
+                document.getElementById('online-code-entry-wrap').style.display = 'none';
+                selectOnlineCreateMode(onlineState.mode || '2p');
+                setTextContent('btn-name-confirm', t('createRoomBtn'))
             }
-            document.getElementById('btn-online-pick-2p').onclick = () => enterOnlinePresetSettings('2p');
-            document.getElementById('btn-online-pick-4p').onclick = () => enterOnlinePresetSettings('4p');
-            document.getElementById('btn-online-pick-hunter').onclick = () => enterOnlinePresetSettings('hunter');
+            document.getElementById('btn-online-pick-2p').onclick = () => selectOnlineCreateMode('2p');
+            document.getElementById('btn-online-pick-4p').onclick = () => selectOnlineCreateMode('4p');
+            document.getElementById('btn-online-pick-hunter').onclick = () => selectOnlineCreateMode('hunter');
             document.getElementById('btn-online-back1').onclick = () => {
                 onlineSetupView.style.display = 'none';
                 if (onlineEntryFromNameEntry) {
@@ -768,7 +782,7 @@
                     onlineStatusText.textContent = networkHintMsg + '\n[debug: ' + (e && (e.code || e.message) || e) + ']'
                 }
             }
-            document.getElementById('btn-online-create').onclick = startOnlineCreateFlow;
+            document.getElementById('btn-online-create').onclick = showOnlineCreateSetup;
             document.getElementById('btn-online-copy-code').onclick = () => {
                 const code = onlineCodeBox.textContent;
                 if (code && navigator.clipboard) {
@@ -796,7 +810,7 @@
                 teardownOnline(!1);
                 onlineJoinView.style.display = 'none';
                 onlineJoinView.classList.remove('autoconnecting');
-                backToOnlineSettings()
+                onlineChoiceView.style.display = 'flex'
             };
             // Join-room flow. `code` normally comes straight from the
             // room-code field on the settings screen; `fromOtp` is used by
@@ -2333,7 +2347,10 @@
             function showNameEntry(mode, isClassic) {
                 selectedMode = mode;
                 document.getElementById('mode-select-view').style.display = 'none';
+                document.getElementById('offline-mode-pick-view').style.display = 'none';
                 document.getElementById('name-entry-view').style.display = 'block';
+                document.getElementById('online-create-mode-pick').style.display = 'none';
+                document.getElementById('online-code-entry-wrap').style.display = 'none';
                 setGameType(!1);
                 setSelectedTimer(DEFAULT_TIMER_SECONDS);
                 const pcToggle = document.getElementById('player-count-toggle');
