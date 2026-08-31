@@ -327,9 +327,10 @@
                     rematchAcceptLabel: "Accept Opponent's Rematch",
                     rematchWaitingLabel: 'Waiting for opponent...',
                     opponentLeftMsg: 'Opponent left the game',
-                    disconnectBannerText: '{name} disconnected — {time} to reconnect',
+                    disconnectBannerText: '{name} lost connection. They have {time} left to reconnect before automatically forfeiting the match.',
                     disconnectReconnectedToast: '{name} reconnected',
                     disconnectTimeoutToast: '{name} lost connection — forfeited the match',
+                    matchPausedToast: 'Match paused — waiting for your opponent to reconnect',
                     toastRematchRequested: 'Opponent wants a rematch',
                     gtOfflineLabel: 'Offline',
                     gtOnlineLabel: 'Online',
@@ -376,19 +377,106 @@
                 })
             }
 
-            function showToast(message) {
+            // ===== Toast notifications ==========================================
+            // Same messages, same trigger rules as before — just a proper
+            // card instead of a single line of text: icon by type, a close
+            // button, and a footer that counts down to auto-dismiss (click it
+            // to pause). Multiple toasts can stack; the oldest is dropped
+            // once the stack gets too tall.
+            const TOAST_ICONS = {
+                success: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2"/><path d="M7.8 12.5l2.6 2.6 5.8-6.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+                warning: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 3.6 21.3 20H2.7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9.6v4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>',
+                error: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2"/><path d="M12 7.2v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.2" r="1" fill="currentColor"/></svg>',
+                info: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2"/><path d="M12 10.8v5.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1" fill="currentColor"/></svg>'
+            };
+            const TOAST_MAX_STACK = 3;
+            const TOAST_DURATION_MS = 4000;
+
+            function showToast(message, type) {
+                type = TOAST_ICONS[type] ? type : 'info';
                 const container = document.getElementById('toast-container');
                 if (!container) return;
-                container.innerHTML = '';
+
+                while (container.children.length >= TOAST_MAX_STACK) {
+                    container.firstElementChild.remove()
+                }
+
                 const el = document.createElement('div');
-                el.className = 'toast';
-                el.textContent = message;
+                el.className = 'toast toast-' + type;
+
+                const row = document.createElement('div');
+                row.className = 'toast-row';
+                const icon = document.createElement('span');
+                icon.className = 'toast-icon';
+                icon.innerHTML = TOAST_ICONS[type];
+                const body = document.createElement('div');
+                body.className = 'toast-body';
+                const title = document.createElement('div');
+                title.className = 'toast-title';
+                title.textContent = message;
+                body.appendChild(title);
+                const closeBtn = document.createElement('button');
+                closeBtn.type = 'button';
+                closeBtn.className = 'toast-close';
+                closeBtn.setAttribute('aria-label', 'Close');
+                closeBtn.innerHTML = '&times;';
+                row.append(icon, body, closeBtn);
+
+                const footer = document.createElement('div');
+                footer.className = 'toast-footer';
+                const footerText = document.createElement('span');
+                footer.appendChild(footerText);
+
+                const progress = document.createElement('div');
+                progress.className = 'toast-progress';
+                const progressBar = document.createElement('div');
+                progressBar.className = 'toast-progress-bar';
+                progress.appendChild(progressBar);
+
+                el.append(row, footer, progress);
                 container.appendChild(el);
-                requestAnimationFrame(() => el.classList.add('show'));
-                setTimeout(() => {
+
+                let remainingMs = TOAST_DURATION_MS;
+                let lastTick = Date.now();
+                let paused = false;
+                let rafId = null;
+
+                function renderFooter() {
+                    const secs = Math.max(1, Math.ceil(remainingMs / 1000));
+                    footerText.innerHTML = 'This message will close in ' + secs + ' second' + (secs === 1 ? '' : 's') + '. <u>Click to stop.</u>'
+                }
+
+                function dismiss() {
+                    if (rafId) cancelAnimationFrame(rafId);
                     el.classList.remove('show');
-                    setTimeout(() => el.remove(), 300)
-                }, 2600)
+                    setTimeout(() => el.remove(), 250)
+                }
+
+                function tick() {
+                    if (paused) return;
+                    const now = Date.now();
+                    remainingMs -= (now - lastTick);
+                    lastTick = now;
+                    if (remainingMs <= 0) { dismiss(); return }
+                    renderFooter();
+                    progressBar.style.width = Math.max(0, (remainingMs / TOAST_DURATION_MS) * 100) + '%';
+                    rafId = requestAnimationFrame(tick)
+                }
+
+                renderFooter();
+                closeBtn.onclick = dismiss;
+                footer.onclick = () => {
+                    if (paused) return;
+                    paused = true;
+                    if (rafId) cancelAnimationFrame(rafId);
+                    footerText.innerHTML = 'Paused — click the × to close.'
+                };
+
+                requestAnimationFrame(() => {
+                    el.classList.add('show');
+                    lastTick = Date.now();
+                    rafId = requestAnimationFrame(tick)
+                })
             }
             const startOverlay = document.getElementById('start-overlay');
             const appEl = document.getElementById('app');
@@ -848,7 +936,7 @@
                 const code = onlineCodeBox.textContent;
                 if (code && navigator.clipboard) {
                     navigator.clipboard.writeText(code).then(() => {
-                        showToast('Code copied');
+                        showToast('Code copied', 'success');
                         const btn = document.getElementById('btn-online-copy-code');
                         btn.classList.add('copied');
                         setTimeout(() => btn.classList.remove('copied'), 1400)
@@ -947,11 +1035,11 @@
                     dot.className = 'db-dot';
                     const text = document.createElement('span');
                     text.className = 'db-text';
-                    text.textContent = fmt(t('disconnectBannerText'), { name });
-                    const time = document.createElement('span');
-                    time.className = 'db-time';
-                    time.textContent = formatGraceTime(Math.max(0, timer.remaining));
-                    row.append(dot, text, time);
+                    const timeStr = formatGraceTime(Math.max(0, timer.remaining));
+                    text.innerHTML = t('disconnectBannerText')
+                        .replace('{name}', escapeHTML(name))
+                        .replace('{time}', '<strong class="db-time">' + timeStr + '</strong>');
+                    row.append(dot, text);
                     banner.appendChild(row)
                 });
                 banner.style.display = 'flex'
@@ -971,13 +1059,22 @@
                 updateDisconnectBanner()
             }
 
+            // True while at least one seat is mid-grace-period. Used to pause
+            // the shared match clock and block new moves for EVERYONE — not
+            // just the disconnected player — until every pending disconnect
+            // has cleared (covers 4-player, where more than one seat can be
+            // out at once).
+            function anyDisconnectPending() {
+                return Object.keys(onlineDisconnectTimers).length > 0
+            }
+
             // Called once the 30s grace period actually runs out without the
             // player reconnecting — declares them the loser without touching
             // any other online-state handling (rematch, teardown, etc. all
             // continue to work exactly as they do for a normal resign).
             function handleDisconnectTimeout(player) {
                 if (gameOver || player.finished) return;
-                showToast(fmt(t('disconnectTimeoutToast'), { name: playerDisplayName(player) }));
+                showToast(fmt(t('disconnectTimeoutToast'), { name: playerDisplayName(player) }), 'error');
                 if (gameMode === '4p') {
                     performForfeit4p(player);
                     return
@@ -996,18 +1093,20 @@
             function startDisconnectCountdown(player) {
                 if (gameOver || player.forfeited || player.finished) return;
                 if (onlineDisconnectTimers[player.id]) return; // already counting down
-                showToast(fmt2('{name} disconnected', playerDisplayName(player)));
+                // No separate toast here on purpose — the disconnect banner
+                // below (with its live countdown) is the single, sole notice
+                // for this; a duplicate toast just repeated the same thing.
                 const timer = { remaining: DISCONNECT_GRACE_SECONDS, intervalId: null };
                 onlineDisconnectTimers[player.id] = timer;
                 updateDisconnectBanner();
-                // اگه دقیقاً نوبتِ همین بازیکنِ قطع‌شده باشه، تایمر نوبتش رو
-                // فریز می‌کنیم (فقط interval رو متوقف می‌کنیم، عدد timeBank
-                // دست‌نخورده می‌مونه) تا در کل این ۳۰ ثانیه‌ی مهلت، از زمان
-                // بازی‌اش چیزی کم نشه. turnTimerPlayerId عمداً پاک نمی‌شه تا
-                // وقتی وصل شد از همون نقطه ادامه پیدا کنه، نه از اول.
-                if (timerIsEnabled() && currentPlayer() && currentPlayer().id === player.id) {
-                    stopTurnTimer()
-                }
+                // The instant ANYONE disconnects — regardless of whose turn
+                // it currently is — we freeze the shared match clock (just
+                // stop the interval; timeBank numbers are left untouched) so
+                // no one's remaining time drains away while we wait to see
+                // if they reconnect. turnTimerPlayerId is deliberately left
+                // alone so the clock resumes from exactly the same point
+                // once every pending disconnect clears, instead of resetting.
+                if (timerIsEnabled()) stopTurnTimer();
                 timer.intervalId = setInterval(() => {
                     timer.remaining -= 1;
                     if (timer.remaining <= 0) {
@@ -1035,12 +1134,13 @@
                             // Came back before the countdown ran out — clear
                             // it and carry on as if nothing happened.
                             clearDisconnectCountdown(p.id);
-                            showToast(fmt(t('disconnectReconnectedToast'), { name: playerDisplayName(p) }));
-                            // اگه تایمر نوبتش به‌خاطر قطعی فریز شده بود (الان
-                            // نوبت خودشه و interval متوقفه)، دقیقاً از همون
-                            // عددی که موقع قطعی متوقف شده بود دوباره راهش
-                            // می‌ندازیم — نه از اول با عدد کامل.
-                            if (timerIsEnabled() && !gameOver && currentPlayer() && currentPlayer().id === p.id && turnTimerPlayerId === p.id && !turnTimerInterval) {
+                            showToast(fmt(t('disconnectReconnectedToast'), { name: playerDisplayName(p) }), 'success');
+                            // Only resume the shared clock once EVERY pending
+                            // disconnect has cleared (relevant in 4-player,
+                            // where a second seat could still be out) —
+                            // startTurnTimer() picks the still-frozen bank
+                            // back up right where it left off.
+                            if (!anyDisconnectPending() && timerIsEnabled() && !gameOver) {
                                 startTurnTimer()
                             }
                         }
@@ -1053,7 +1153,7 @@
                         // the dialog like before.
                         if (!onlineState.peerLeft) {
                             onlineState.peerLeft = !0;
-                            showToast('Opponent left the game');
+                            showToast('Opponent left the game', 'warning');
                             refreshGameOverDialogOnlineState()
                         }
                         continue
@@ -1260,13 +1360,13 @@
                     showStartScreen('mode-select-view');
                     startOverlay.style.display = 'flex';
                     appEl.classList.remove('visible');
-                    showToast('That match already ended while you were away.');
+                    showToast('That match already ended while you were away.', 'warning');
                     return
                 }
                 applyFullGameStateSnapshot(state);
                 closeResumeOverlay();
                 pendingResumeSession = null;
-                showToast("You're back! Continue the match.");
+                showToast("You're back! Continue the match.", 'success');
                 drainOnlineMsgQueue()
             }
 
@@ -1292,7 +1392,7 @@
                         } else {
                             onlineRematch.requestedByOpponent = !0;
                             refreshGameOverDialogOnlineState();
-                            showToast(t('toastRematchRequested'))
+                            showToast(t('toastRematchRequested'), 'info')
                         }
                     } else if (data.type === 'rematch-accept') {
                         onlineRematch.requestedByMe = !1;
@@ -1439,7 +1539,7 @@
                 clearOnlineSession();
                 pendingResumeSession = null;
                 closeResumeOverlay();
-                showToast('You forfeited the match — your opponent wins.')
+                showToast('You forfeited the match — your opponent wins.', 'error')
             };
             // ================= END ONLINE MULTIPLAYER =================
 
@@ -1559,6 +1659,7 @@
             function startTurnTimer() {
                 stopTurnTimer();
                 if (!timerIsEnabled() || gameOver) { renderAllPlayerClocks(); return }
+                if (onlineState.active && anyDisconnectPending()) { renderAllPlayerClocks(); return }
                 const p = currentPlayer();
                 if (!p) { renderAllPlayerClocks(); return }
                 const bank = (p.timeBank != null) ? p.timeBank : currentTurnTimerSeconds;
@@ -1621,11 +1722,11 @@
                 if (!p) return;
                 if (onlineState.active) {
                     if (!isMyOnlineTurn()) return;
-                    showToast(fmt(t('timeUpToast'), { name: playerDisplayName(p) }));
+                    showToast(fmt(t('timeUpToast'), { name: playerDisplayName(p) }), 'error');
                     performResign(p);
                     sendOnline({ type: 'resign', playerId: p.id })
                 } else {
-                    showToast(fmt(t('timeUpToast'), { name: playerDisplayName(p) }));
+                    showToast(fmt(t('timeUpToast'), { name: playerDisplayName(p) }), 'error');
                     performResign(p)
                 }
             }
@@ -2455,7 +2556,7 @@
                         showGhostAt(centerLeft, centerTop)
                     }, 380);
                     isHidden = true;
-                    showToast(t('shakeToShowHint'))
+                    showToast(t('shakeToShowHint'), 'info')
                 }
 
                 function revealSoundBtn() {
@@ -3644,9 +3745,9 @@
             }
             btnUndo.onclick = () => {
                 if (isAnimating) return;
-                if (onlineState.active) { showToast('Undo is not available in online games'); return }
+                if (onlineState.active) { showToast('Undo is not available in online games', 'warning'); return }
                 if (undoStack.length === 0) {
-                    showToast(t('toastNothingToUndo'));
+                    showToast(t('toastNothingToUndo'), 'warning');
                     return
                 }
                 const snap = undoStack.pop();
@@ -3678,11 +3779,15 @@
             function executeMove(row, col) {
                 if (gameOver || isAnimating) return;
                 if (onlineState.active && !onlineState.applyingRemote && !isMyOnlineTurn()) return;
+                if (onlineState.active && !onlineState.applyingRemote && anyDisconnectPending()) {
+                    showToast(t('matchPausedToast'), 'warning');
+                    return
+                }
                 const player = currentPlayer();
                 const moves = getValidMoves(player);
                 const valid = moves.some(m => m[0] === row && m[1] === col);
                 if (!valid) {
-                    showToast(t('toastInvalidMove'));
+                    showToast(t('toastInvalidMove'), 'warning');
                     return
                 }
                 if (onlineState.active && !onlineState.applyingRemote) sendOnline({ type: 'move', row, col });
@@ -3757,9 +3862,13 @@
                     draw();
                     return
                 }
+                if (onlineState.active && !onlineState.applyingRemote && anyDisconnectPending()) {
+                    showToast(t('matchPausedToast'), 'warning');
+                    return
+                }
                 const player = currentPlayer();
                 if (player.walls <= 0) {
-                    showToast(t('toastNoWalls'));
+                    showToast(t('toastNoWalls'), 'warning');
                     pendingWallPos = null;
                     wallPreviewPos = null;
                     hideWallConfirm();
@@ -3777,7 +3886,7 @@
                             col = pos.col;
                         if (row < 0 || row > 7 || col < 0 || col > 7) return;
                         if (vWalls[row][col] && vWalls[row + 1][col]) {
-                            showToast(t('alertPerpendicular'));
+                            showToast(t('alertPerpendicular'), 'warning');
                             pendingWallPos = null;
                             wallPreviewPos = null;
                             hideWallConfirm();
@@ -3785,7 +3894,7 @@
                             return
                         }
                         if (hWalls[row][col] || hWalls[row][col + 1]) {
-                            showToast(t('toastWallExists'));
+                            showToast(t('toastWallExists'), 'warning');
                             pendingWallPos = null;
                             wallPreviewPos = null;
                             hideWallConfirm();
@@ -3800,7 +3909,7 @@
                             col = pos.col;
                         if (row < 0 || row > 7 || col < 0 || col > 7) return;
                         if (hWalls[row][col] && hWalls[row][col + 1]) {
-                            showToast(t('alertPerpendicular'));
+                            showToast(t('alertPerpendicular'), 'warning');
                             pendingWallPos = null;
                             wallPreviewPos = null;
                             hideWallConfirm();
@@ -3808,7 +3917,7 @@
                             return
                         }
                         if (vWalls[row][col] || vWalls[row + 1][col]) {
-                            showToast(t('toastWallExists'));
+                            showToast(t('toastWallExists'), 'warning');
                             pendingWallPos = null;
                             wallPreviewPos = null;
                             hideWallConfirm();
@@ -3830,7 +3939,7 @@
                     if (blocksSomeone) {
                         hWalls = backupH;
                         vWalls = backupV;
-                        showToast(t('alertBlocked'));
+                        showToast(t('alertBlocked'), 'warning');
                         pendingWallPos = null;
                         wallPreviewPos = null;
                         hideWallConfirm();
@@ -3935,10 +4044,10 @@
                     sfxProximity();
                     if (huntProximity >= HUNT_PROXIMITY_MAX) {
                         gameOver = !0;
-                        showToast(t('huntProximityWinToast'));
+                        showToast(t('huntProximityWinToast'), 'warning');
                         setTimeout(() => showGameOverDialog(hunterP, escaperP), 150)
                     } else {
-                        showToast(fmt(t('huntProximityToast'), { n: huntProximity }))
+                        showToast(fmt(t('huntProximityToast'), { n: huntProximity }), 'warning')
                     }
                 }
             }
