@@ -2841,7 +2841,7 @@
             }
 
             function currentPlayer() {
-                return players[turn]
+                return players.find(p => p.id === turn)
             }
 
             function setThemeColor(color) {
@@ -4270,7 +4270,7 @@
                 do {
                     turnIndex = (turnIndex + 1) % turnOrder.length;
                     attempts++
-                } while ((players[turnOrder[turnIndex]].finished || players[turnOrder[turnIndex]].forfeited) && attempts <= turnOrder.length);
+                } while ((players.find(p => p.id === turnOrder[turnIndex]).finished || players.find(p => p.id === turnOrder[turnIndex]).forfeited) && attempts <= turnOrder.length);
                 turn = turnOrder[turnIndex]
             }
 
