@@ -27,6 +27,7 @@
             window.FBRoom = {
                 _roomCode: null,
                 _mySlotId: null,
+                _token: null,
                 _msgListeners: [],
                 _presenceListeners: [],
                 _joinedAt: 0,
@@ -48,11 +49,20 @@
                     return !!(res && res.exists)
                 },
 
-                async joinRoom(code, maxPlayers) {
-                    const res = await emitAck('joinRoom', { code, maxPlayers });
+                // `token` (optional) is the private reconnect token this same
+                // browser got back the first time it joined this room — passing
+                // it makes the server return the caller to their OWN original
+                // slot instead of "whatever's free", and lets it be their slot
+                // even if it's currently marked disconnected. Without a token
+                // (first-time join), the server only ever hands out a slot that
+                // was never claimed by anyone, so a disconnected player's spot
+                // can't be taken by a stranger who just knows the room code.
+                async joinRoom(code, maxPlayers, token) {
+                    const res = await emitAck('joinRoom', { code, maxPlayers, token: token || null });
                     if (!res || !res.ok) return null;
                     window.FBRoom._roomCode = code;
                     window.FBRoom._mySlotId = res.slot;
+                    window.FBRoom._token = res.token || null;
                     window.FBRoom._joinedAt = Date.now();
                     window.FBRoom._roomMode = res.mode || null;
                     return res.slot
@@ -63,15 +73,42 @@
                     getSocket().emit('roomMessage', { payload: data })
                 },
 
+                // Best-effort snapshot of the live match, cached server-side so
+                // a reconnecting opponent can be served state even if this
+                // device itself isn't online at that moment (e.g. both players
+                // reloaded around the same time). Cheap/throttling is the
+                // caller's job; this just fires the event.
+                checkpoint(state) {
+                    if (!window.FBRoom._roomCode) return;
+                    getSocket().emit('checkpoint', { state })
+                },
+
                 onMessage(callback) {
                     const handler = (msg) => {
                         if (!msg) return;
                         if (msg.from === window.FBRoom._mySlotId) return;
                         if (msg.t && msg.t < window.FBRoom._joinedAt - 2000) return;
-                        callback(msg.payload, msg.from)
+                        // `from` is the sender's slot as verified by the server
+                        // from the socket itself — never from anything the
+                        // sender's payload claims. `seq` is a per-room, ever-
+                        // increasing counter so the caller can notice a missed
+                        // message (network hiccup, etc.) and ask for a fresh
+                        // state sync instead of silently drifting out of sync.
+                        callback(msg.payload, msg.from, msg.seq)
                     };
                     getSocket().on('roomMessage', handler);
                     const unsub = () => { try { getSocket().off('roomMessage', handler) } catch (e) {} };
+                    window.FBRoom._msgListeners.push(unsub);
+                    return unsub
+                },
+
+                // Server-originated fallback reply to a 'request-state' message
+                // when nobody else is currently connected to answer it — see
+                // the matching comment in server.js's roomMessage handler.
+                onStateFallback(callback) {
+                    const handler = (msg) => { if (msg && msg.state) callback(msg.state) };
+                    getSocket().on('stateFallback', handler);
+                    const unsub = () => { try { getSocket().off('stateFallback', handler) } catch (e) {} };
                     window.FBRoom._msgListeners.push(unsub);
                     return unsub
                 },
@@ -97,6 +134,7 @@
                     window.FBRoom._presenceListeners = [];
                     window.FBRoom._roomCode = null;
                     window.FBRoom._mySlotId = null;
+                    window.FBRoom._token = null;
                     window.FBRoom._roomMode = null
                 }
             };

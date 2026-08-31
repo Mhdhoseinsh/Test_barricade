@@ -629,7 +629,14 @@
                 applyingRemote: !1,
                 peerLeft: !1,
                 timerSeconds: 120,
-                hunterRoleByPlayerId: null
+                hunterRoleByPlayerId: null,
+                // Per-room message counter (see room.js/server.js) — tracks the
+                // last `seq` we successfully applied so a gap (missed message)
+                // can be noticed and auto-corrected instead of silently
+                // desyncing the two devices forever. Reset to null whenever we
+                // (re)connect, since a fresh connection restarts its own
+                // baseline; the next inbound message re-anchors it.
+                lastSeq: null
             };
 
             const onlineRematch = {
@@ -659,6 +666,13 @@
                         maxPlayers: onlineMaxPlayers(),
                         localPlayerId: onlineState.localPlayerId,
                         timerSeconds: onlineState.timerSeconds,
+                        // Private per-slot reconnect token the server handed us
+                        // when we first joined — resending it on resume is what
+                        // guarantees we get back our OWN slot (see joinRoom in
+                        // server.js), instead of just "whichever slot happens
+                        // to be free", which could be the wrong one in 4-player
+                        // mode, or even someone else's slot entirely.
+                        token: (window.FBRoom && window.FBRoom._token) || null,
                         savedAt: Date.now()
                     }))
                 } catch (e) {}
@@ -799,6 +813,7 @@
                 stopTurnTimer();
                 turnTimerPlayerId = null;
                 onlineMsgQueue = [];
+                onlineState.lastSeq = null;
                 const lobbyView = document.getElementById('online-lobby-view');
                 if (lobbyView) lobbyView.style.display = 'none';
                 const revealOverlay = document.getElementById('hunter-role-reveal-overlay');
@@ -893,7 +908,67 @@
             const networkHintMsg = 'Could not connect. Please check your internet connection and try again.';
 
             function attachRoomMessageListener() {
-                window.FBRoom.onMessage((data) => { handleOnlineData(data) })
+                window.FBRoom.onMessage((data, from, seq) => {
+                    if (!data) return;
+                    // `from` is the server-verified true sender slot (never
+                    // spoofable from the payload itself) — stash it so
+                    // processOnlineMessage() can trust it over any
+                    // self-declared id inside the payload (see there).
+                    data.__from = from;
+                    if (typeof seq === 'number') {
+                        if (onlineState.lastSeq != null && seq > onlineState.lastSeq + 1 && !awaitingStateSync) {
+                            // We missed at least one message in between — don't
+                            // apply this one on top of an unknown gap, ask for a
+                            // fresh full snapshot instead of risking a silent,
+                            // permanent desync between the two devices.
+                            onlineState.lastSeq = seq;
+                            requestLiveResync();
+                            return
+                        }
+                        onlineState.lastSeq = seq
+                    }
+                    handleOnlineData(data)
+                });
+                // Server-side fallback answer to our own 'request-state' when
+                // the opponent isn't actually online to answer it themselves
+                // (e.g. both devices reloaded around the same time).
+                window.FBRoom.onStateFallback((state) => {
+                    if (!awaitingStateSync) return;
+                    handleStateSyncMessage({ state })
+                })
+            }
+
+            // Mid-match auto-resync: reuses the exact same request-state /
+            // state-sync machinery the reconnect-after-reload flow already
+            // has, but triggered live (without the resume overlay) whenever
+            // we detect we might have drifted out of sync with the opponent —
+            // either a missed message (see above) or a move/wall that arrived
+            // but failed local validation, which previously was just silently
+            // dropped forever with no way to recover except a manual reload.
+            let liveResyncCooldownUntil = 0;
+            function requestLiveResync() {
+                if (!onlineState.active || awaitingStateSync) return;
+                const now = Date.now();
+                if (now < liveResyncCooldownUntil) return; // avoid resync storms from several near-simultaneous gaps
+                liveResyncCooldownUntil = now + 6000;
+                awaitingStateSync = !0;
+                showToast("Reconnecting the board with your opponent…", 'warning');
+                sendOnline({ type: 'request-state' });
+                stateSyncTimeoutId = setTimeout(() => {
+                    if (!awaitingStateSync) return;
+                    awaitingStateSync = !1;
+                    showToast("Couldn't resync automatically — reload if the board looks off.", 'error')
+                }, 9000)
+            }
+
+            // Small, throttle-free helper: pushes our current full board state
+            // to the server's per-room cache so a reconnecting opponent can be
+            // served state even if we're the only device that was ever online
+            // to report it. Safe to call often — the snapshot is small (two
+            // 9x9 boolean grids + a handful of player fields).
+            function sendOnlineCheckpoint() {
+                if (!onlineState.active || !window.FBRoom) return;
+                try { window.FBRoom.checkpoint(buildFullGameStateSnapshot()) } catch (e) {}
             }
 
             function attachRoomPresenceListener(maxPlayers) {
@@ -1200,6 +1275,7 @@
                 onlineState.active = !0;
                 onlineState.mode = mode;
                 onlineState.peerLeft = !1;
+                onlineState.lastSeq = null;
                 clearAllDisconnectCountdowns();
                 currentTurnTimerSeconds = onlineState.timerSeconds || DEFAULT_TIMER_SECONDS;
                 document.getElementById('name-entry-view').style.display = 'none';
@@ -1365,7 +1441,15 @@
                 turnTimerPlayerId = null;
                 syncTurnTimer();
                 sfxGameStart();
-                saveOnlineSession()
+                saveOnlineSession();
+                // Fresh connection/resync — the next inbound message
+                // re-anchors our seq baseline instead of being compared
+                // against a counter from before the gap.
+                onlineState.lastSeq = null;
+                // Re-report our just-restored state so the server's cache is
+                // warm again in case we're the one who ends up needing to
+                // answer a future 'request-state' fallback.
+                sendOnlineCheckpoint()
             }
 
             function handleStateSyncMessage(data) {
@@ -1402,16 +1486,37 @@
             function processOnlineMessage(data) {
                 onlineState.applyingRemote = !0;
                 try {
+                    // `data.__from` is the server-verified true sender slot
+                    // (see attachRoomMessageListener) — for any message that
+                    // claims to act "as" a particular player, this is trusted
+                    // over any self-declared id/playerId field in the payload
+                    // itself, since that field is just whatever the sender's
+                    // client chose to put there. Without this, a modified
+                    // client could e.g. send {type:'forfeit', playerId:<someone
+                    // else's id>} and force a different player's forfeit in
+                    // 4-player mode, or send a 'move' that gets misattributed
+                    // to whichever player we locally think is on turn.
+                    const trueFrom = (typeof data.__from === 'number') ? data.__from : undefined;
                     if (data.type === 'move') {
-                        executeMove(data.row, data.col)
+                        if (trueFrom !== undefined && (!currentPlayer() || trueFrom !== currentPlayer().id)) {
+                            requestLiveResync()
+                        } else if (!executeMove(data.row, data.col)) {
+                            requestLiveResync()
+                        }
                     } else if (data.type === 'wall') {
-                        pendingWallPos = { row: data.row, col: data.col, mode: data.mode };
-                        confirmWall()
+                        if (trueFrom !== undefined && (!currentPlayer() || trueFrom !== currentPlayer().id)) {
+                            requestLiveResync()
+                        } else {
+                            pendingWallPos = { row: data.row, col: data.col, mode: data.mode };
+                            if (!confirmWall()) requestLiveResync()
+                        }
                     } else if (data.type === 'resign') {
-                        const resignedPlayer = (data.playerId !== undefined) ? players.find(p => p.id === data.playerId) : null;
+                        const targetId = trueFrom !== undefined ? trueFrom : data.playerId;
+                        const resignedPlayer = (targetId !== undefined) ? players.find(p => p.id === targetId) : null;
                         performResign(resignedPlayer || currentPlayer())
                     } else if (data.type === 'forfeit') {
-                        const p = players.find(p => p.id === data.playerId);
+                        const targetId = trueFrom !== undefined ? trueFrom : data.playerId;
+                        const p = players.find(p => p.id === targetId);
                         if (p && !p.forfeited) performForfeit4p(p)
                     } else if (data.type === 'rematch-request') {
                         if (onlineRematch.requestedByMe) {
@@ -1428,7 +1533,7 @@
                         onlineRematch.requestedByOpponent = !1;
                         restartSameGame()
                     } else if (data.type === 'profile') {
-                        const pid = (data.id !== undefined) ? data.id : (onlineState.localPlayerId === 0 ? 1 : 0);
+                        const pid = trueFrom !== undefined ? trueFrom : ((data.id !== undefined) ? data.id : (onlineState.localPlayerId === 0 ? 1 : 0));
                         onlineLobby.othersById[pid] = { name: (data.name || '').slice(0, 13), color: data.color || customColor(slotNameForId(onlineState.mode, pid)) };
                         updateOnlineOppUI()
                     } else if (data.type === 'role-pick') {
@@ -1521,7 +1626,7 @@
                         setTimeout(() => { closeResumeOverlay(); clearOnlineSession(); pendingResumeSession = null }, 1800);
                         return
                     }
-                    const slot = await window.FBRoom.joinRoom(session.roomCode, session.maxPlayers);
+                    const slot = await window.FBRoom.joinRoom(session.roomCode, session.maxPlayers, session.token);
                     if (slot === null || slot === undefined) {
                         showResumeStatus("Couldn't rejoin — the room is full.");
                         setTimeout(() => { closeResumeOverlay(); clearOnlineSession(); pendingResumeSession = null }, 1800);
@@ -1557,7 +1662,7 @@
                 try {
                     const exists = await window.FBRoom.roomExists(session.roomCode);
                     if (exists) {
-                        const slot = await window.FBRoom.joinRoom(session.roomCode, session.maxPlayers);
+                        const slot = await window.FBRoom.joinRoom(session.roomCode, session.maxPlayers, session.token);
                         if (slot !== null && slot !== undefined) {
                             const forfeitType = session.mode === '4p' ? 'forfeit' : 'resign';
                             sendOnline({ type: forfeitType, playerId: slot });
@@ -2172,7 +2277,13 @@
                 updateScores();
                 updateActivePlayerUI();
                 draw();
-                saveOnlineSession()
+                saveOnlineSession();
+                // Warm the server's checkpoint cache right away, before any
+                // move has happened — otherwise, if both players reloaded in
+                // the first few seconds of the match, there'd be nothing yet
+                // for the server to serve back (see 'request-state' handling
+                // in server.js).
+                sendOnlineCheckpoint()
             }
             // ================= END ONLINE LOBBY =================
 
@@ -3079,6 +3190,7 @@
                 hideWallConfirm();
                 updateActivePlayerUI();
                 draw();
+                sendOnlineCheckpoint();
                 if (gameMode === '2p' || gameMode === 'hunter') {
                     const winner = players.find(p => p.id !== player.id);
                     setTimeout(() => showGameOverDialog(winner, player), 50)
@@ -3096,6 +3208,7 @@
                     updateActivePlayerUI();
                     renderTopbar();
                     draw();
+                    sendOnlineCheckpoint();
                     setTimeout(() => showGameOverDialog(null, null, player.team === 0 ? 1 : 0), 50);
                     return
                 }
@@ -3104,7 +3217,8 @@
                 }
                 updateActivePlayerUI();
                 renderTopbar();
-                draw()
+                draw();
+                sendOnlineCheckpoint()
             }
 
             btnResign.onclick = async () => {
@@ -3859,19 +3973,25 @@
                 draw()
             };
 
+            // Returns true if the move was accepted and applied, false if it
+            // was rejected. The caller (processOnlineMessage) uses this to
+            // tell a rejected remote move apart from a silently-dropped one —
+            // previously there was no way to tell the difference, so a
+            // rejected opponent move just vanished with no recovery, leaving
+            // the two devices permanently out of sync.
             function executeMove(row, col) {
-                if (gameOver || isAnimating) return;
-                if (onlineState.active && !onlineState.applyingRemote && !isMyOnlineTurn()) return;
+                if (gameOver || isAnimating) return !1;
+                if (onlineState.active && !onlineState.applyingRemote && !isMyOnlineTurn()) return !1;
                 if (onlineState.active && !onlineState.applyingRemote && anyDisconnectPending()) {
                     showToast(t('matchPausedToast'), 'warning');
-                    return
+                    return !1
                 }
                 const player = currentPlayer();
                 const moves = getValidMoves(player);
                 const valid = moves.some(m => m[0] === row && m[1] === col);
                 if (!valid) {
                     showToast(t('toastInvalidMove'), 'warning');
-                    return
+                    return !1
                 }
                 if (onlineState.active && !onlineState.applyingRemote) sendOnline({ type: 'move', row, col });
                 let captureTarget = null;
@@ -3900,16 +4020,25 @@
                             checkWinAfterMove(player);
                             if (!gameOver) advanceTurn();
                             updateActivePlayerUI();
-                            draw()
+                            draw();
+                            sendOnlineCheckpoint()
                         })
                     } else {
                         checkWinAfterMove(player);
-                        if (!gameOver && gameMode === 'hunter' && player.role === 'hunter') checkHuntProximity();
+                        // BUGFIX: this used to only check proximity when the
+                        // HUNTER moved, so an escaper who voluntarily stepped
+                        // right next to the hunter never counted toward the
+                        // proximity win condition at all — proximity is about
+                        // the two pawns' distance, not about who moved, so it
+                        // has to be checked after either side's move.
+                        if (!gameOver && gameMode === 'hunter') checkHuntProximity();
                         if (!gameOver) advanceTurn();
                         updateActivePlayerUI();
-                        draw()
+                        draw();
+                        sendOnlineCheckpoint()
                     }
-                })
+                });
+                return !0
             }
 
             function animateCapture(callback) {
@@ -3936,18 +4065,23 @@
                 loop()
             }
 
+            // Returns true if the wall was accepted and placed, false if it
+            // was rejected — same reasoning as executeMove()'s return value:
+            // lets processOnlineMessage tell a rejected remote wall apart
+            // from one it can't tell was ever handled, and trigger an
+            // automatic resync instead of leaving the two devices desynced.
             function confirmWall() {
-                if (!pendingWallPos || gameOver || isAnimating) return;
+                if (!pendingWallPos || gameOver || isAnimating) return !1;
                 if (onlineState.active && !onlineState.applyingRemote && !isMyOnlineTurn()) {
                     pendingWallPos = null;
                     wallPreviewPos = null;
                     hideWallConfirm();
                     draw();
-                    return
+                    return !1
                 }
                 if (onlineState.active && !onlineState.applyingRemote && anyDisconnectPending()) {
                     showToast(t('matchPausedToast'), 'warning');
-                    return
+                    return !1
                 }
                 const player = currentPlayer();
                 if (player.walls <= 0) {
@@ -3956,7 +4090,7 @@
                     wallPreviewPos = null;
                     hideWallConfirm();
                     draw();
-                    return
+                    return !1
                 }
                 const snap0 = makeSnapshot();
                 const pos = pendingWallPos;
@@ -3967,14 +4101,14 @@
                     if (pos.mode === 'hwall') {
                         const row = pos.row,
                             col = pos.col;
-                        if (row < 0 || row > 7 || col < 0 || col > 7) return;
+                        if (row < 0 || row > 7 || col < 0 || col > 7) return !1;
                         if (vWalls[row][col] && vWalls[row + 1][col]) {
                             showToast(t('alertPerpendicular'), 'warning');
                             pendingWallPos = null;
                             wallPreviewPos = null;
                             hideWallConfirm();
                             draw();
-                            return
+                            return !1
                         }
                         if (hWalls[row][col] || hWalls[row][col + 1]) {
                             showToast(t('toastWallExists'), 'warning');
@@ -3982,7 +4116,7 @@
                             wallPreviewPos = null;
                             hideWallConfirm();
                             draw();
-                            return
+                            return !1
                         }
                         hWalls[row][col] = !0;
                         hWalls[row][col + 1] = !0;
@@ -3990,14 +4124,14 @@
                     } else {
                         const row = pos.row,
                             col = pos.col;
-                        if (row < 0 || row > 7 || col < 0 || col > 7) return;
+                        if (row < 0 || row > 7 || col < 0 || col > 7) return !1;
                         if (hWalls[row][col] && hWalls[row][col + 1]) {
                             showToast(t('alertPerpendicular'), 'warning');
                             pendingWallPos = null;
                             wallPreviewPos = null;
                             hideWallConfirm();
                             draw();
-                            return
+                            return !1
                         }
                         if (vWalls[row][col] || vWalls[row + 1][col]) {
                             showToast(t('toastWallExists'), 'warning');
@@ -4005,7 +4139,7 @@
                             wallPreviewPos = null;
                             hideWallConfirm();
                             draw();
-                            return
+                            return !1
                         }
                         vWalls[row][col] = !0;
                         vWalls[row + 1][col] = !0;
@@ -4027,7 +4161,7 @@
                         wallPreviewPos = null;
                         hideWallConfirm();
                         draw();
-                        return
+                        return !1
                     }
                     if (onlineState.active && !onlineState.applyingRemote) sendOnline({ type: 'wall', row: pos.row, col: pos.col, mode: pos.mode });
                     undoStack.push(snap0);
@@ -4050,11 +4184,14 @@
                     animateWall(wallKey, () => {
                         advanceTurn();
                         updateActivePlayerUI();
-                        draw()
-                    })
+                        draw();
+                        sendOnlineCheckpoint()
+                    });
+                    return !0
                 } catch (e) {
                     hWalls = backupH;
-                    vWalls = backupV
+                    vWalls = backupV;
+                    return !1
                 }
             }
 
