@@ -7,14 +7,6 @@
             const ITEMS_PER_PAGE = 8;
             let sfxCtx = null;
             let sfxEnabled = localStorage.getItem('barricade-sfx') !== 'off';
-            const WALL_OFFSET_DEFAULT = 56;
-            const WALL_OFFSET_MIN = 0;
-            const WALL_OFFSET_MAX = 120;
-            function loadWallPreviewOffset() {
-                const raw = parseInt(localStorage.getItem('barricade-wall-offset'), 10);
-                if (isNaN(raw)) return WALL_OFFSET_DEFAULT;
-                return Math.min(WALL_OFFSET_MAX, Math.max(WALL_OFFSET_MIN, raw))
-            }
 
             function getSfxCtx() {
                 if (!sfxEnabled) return null;
@@ -2376,20 +2368,6 @@
             if (btnSoundSettings) btnSoundSettings.onclick = toggleSound;
             updateSoundUI();
 
-            const wallOffsetSlider = document.getElementById('wall-offset-slider');
-            const wallOffsetValue = document.getElementById('wall-offset-value');
-            function updateWallOffsetUI() {
-                if (wallOffsetSlider) wallOffsetSlider.value = String(wallPreviewOffset);
-                if (wallOffsetValue) wallOffsetValue.textContent = wallPreviewOffset + 'px'
-            }
-            if (wallOffsetSlider) {
-                wallOffsetSlider.addEventListener('input', () => {
-                    setWallPreviewOffset(parseInt(wallOffsetSlider.value, 10) || 0);
-                    updateWallOffsetUI()
-                })
-            }
-            updateWallOffsetUI();
-
             function makeSoundBtnDraggable(btn, wrapper) {
                 if (!btn || !wrapper) return;
                 const DRAG_THRESHOLD = 12;
@@ -4489,6 +4467,32 @@
                 hideWallConfirm();
                 draw()
             };
+
+            const WALL_OFFSET_MIN = 0;
+            const WALL_OFFSET_MAX = 120;
+            function loadWallPreviewOffset() {
+                const raw = parseInt(localStorage.getItem('barricade-wall-offset'), 10);
+                if (isNaN(raw)) return 56;
+                return Math.min(WALL_OFFSET_MAX, Math.max(WALL_OFFSET_MIN, raw))
+            }
+            let wallPreviewOffset = loadWallPreviewOffset();
+            function setWallPreviewOffset(px) {
+                wallPreviewOffset = Math.min(WALL_OFFSET_MAX, Math.max(WALL_OFFSET_MIN, px));
+                localStorage.setItem('barricade-wall-offset', String(wallPreviewOffset))
+            }
+            const wallOffsetSlider = document.getElementById('wall-offset-slider');
+            const wallOffsetValue = document.getElementById('wall-offset-value');
+            function updateWallOffsetUI() {
+                if (wallOffsetSlider) wallOffsetSlider.value = String(wallPreviewOffset);
+                if (wallOffsetValue) wallOffsetValue.textContent = wallPreviewOffset + 'px'
+            }
+            if (wallOffsetSlider) {
+                wallOffsetSlider.addEventListener('input', () => {
+                    setWallPreviewOffset(parseInt(wallOffsetSlider.value, 10) || 0);
+                    updateWallOffsetUI()
+                })
+            }
+            updateWallOffsetUI();
 
             function getCellFromEvent(e, offsetX, offsetY) {
                 const rect = canvas.getBoundingClientRect();

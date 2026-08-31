@@ -3297,6 +3297,9 @@
             opacity: 1;
             transform: translateY(0) scale(1)
         }
+        #toast-container.toast-pos-bottom .toast.show {
+            transform: translateY(0) scale(1)
+        }
         .toast.leave {
             opacity: 0;
             transform: translateY(-8px) scale(.96);
