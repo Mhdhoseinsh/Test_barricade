@@ -7,6 +7,14 @@
             const ITEMS_PER_PAGE = 8;
             let sfxCtx = null;
             let sfxEnabled = localStorage.getItem('barricade-sfx') !== 'off';
+            const WALL_OFFSET_DEFAULT = 56;
+            const WALL_OFFSET_MIN = 0;
+            const WALL_OFFSET_MAX = 120;
+            function loadWallPreviewOffset() {
+                const raw = parseInt(localStorage.getItem('barricade-wall-offset'), 10);
+                if (isNaN(raw)) return WALL_OFFSET_DEFAULT;
+                return Math.min(WALL_OFFSET_MAX, Math.max(WALL_OFFSET_MIN, raw))
+            }
 
             function getSfxCtx() {
                 if (!sfxEnabled) return null;
@@ -214,12 +222,12 @@
                     modeClassicDesc: 'Block your rivals and race to the other side.',
                     modeClassicBadge: '2-4',
                     pc2Label: '2 Players',
-                    pc4Label: '4 Players',
+                    pc4Label: '2 vs 2',
                     modeHunterTitle: 'Wolf VS Sheep',
                     modeHunterDesc: 'One escapes, one hunts — first to win takes it.',
                     onlinePick2pLabel: 'Classic 1 vs 1',
-                    onlinePick4pLabel: '4 Players',
-                    onlinePickHunterLabel: 'Wolf and Sheep',
+                    onlinePick4pLabel: '2 vs 2',
+                    onlinePickHunterLabel: 'Wolf & Sheep',
                     onlineCreateTitle: 'Create Room',
                     onlineCreateDesc: 'Make a code and send it to your opponent',
                     onlineJoinTitle: 'Join with Code',
@@ -317,6 +325,8 @@
                     settingsTitle: 'Settings',
                     settingsSoundLabel: 'Sound Effects',
                     settingsSoundDesc: 'Enable or mute in-game sounds',
+                    settingsWallOffsetLabel: 'Wall Preview Distance',
+                    settingsWallOffsetDesc: 'How far your finger sits from the wall preview while dragging',
                     onlineLobbyTitle: 'Set Name & Avatar',
                     onlineLobbyDesc: 'You have up to {n} seconds to set your name and avatar color',
                     onlineLobbyHint: 'You can only change your own name and color',
@@ -437,6 +447,11 @@
                 el.append(row, progress);
                 container.appendChild(el);
 
+                // Toasts drop in from the top everywhere in the app, except
+                // during an active game where they drop in from the bottom
+                // (above the board controls) so they don't cover the board.
+                container.classList.toggle('toast-pos-bottom', !!(appEl && appEl.classList.contains('visible')));
+
                 let remainingMs = TOAST_DURATION_MS;
                 let lastTick = Date.now();
                 let rafId = null;
@@ -471,10 +486,19 @@
                     }
                 };
 
+                // Force a style flush before flipping to the "show" state so
+                // the browser is guaranteed to have painted the initial
+                // (off-screen/opacity:0) styles first. Firefox in particular
+                // can otherwise coalesce the very next rAF with the append
+                // and skip the transition entirely, so only the icon's own
+                // keyframe animation appears to run.
+                void el.offsetWidth;
                 requestAnimationFrame(() => {
-                    el.classList.add('show');
-                    lastTick = Date.now();
-                    rafId = requestAnimationFrame(tick)
+                    requestAnimationFrame(() => {
+                        el.classList.add('show');
+                        lastTick = Date.now();
+                        rafId = requestAnimationFrame(tick)
+                    })
                 })
             }
             const startOverlay = document.getElementById('start-overlay');
@@ -2145,6 +2169,8 @@
                 setTextContent('settings-title', t('settingsTitle'));
                 setTextContent('settings-sound-label', t('settingsSoundLabel'));
                 setTextContent('settings-sound-desc', t('settingsSoundDesc'));
+                setTextContent('settings-wall-offset-label', t('settingsWallOffsetLabel'));
+                setTextContent('settings-wall-offset-desc', t('settingsWallOffsetDesc'));
                 setTextContent('about-title', t('aboutTitle'));
                 setTextContent('about-tagline', t('aboutTagline'));
                 setTextContent('about-text', t('aboutText'));
@@ -2349,6 +2375,20 @@
             const btnSoundSettings = document.getElementById('btn-sound-settings');
             if (btnSoundSettings) btnSoundSettings.onclick = toggleSound;
             updateSoundUI();
+
+            const wallOffsetSlider = document.getElementById('wall-offset-slider');
+            const wallOffsetValue = document.getElementById('wall-offset-value');
+            function updateWallOffsetUI() {
+                if (wallOffsetSlider) wallOffsetSlider.value = String(wallPreviewOffset);
+                if (wallOffsetValue) wallOffsetValue.textContent = wallPreviewOffset + 'px'
+            }
+            if (wallOffsetSlider) {
+                wallOffsetSlider.addEventListener('input', () => {
+                    setWallPreviewOffset(parseInt(wallOffsetSlider.value, 10) || 0);
+                    updateWallOffsetUI()
+                })
+            }
+            updateWallOffsetUI();
 
             function makeSoundBtnDraggable(btn, wrapper) {
                 if (!btn || !wrapper) return;
@@ -4450,9 +4490,6 @@
                 draw()
             };
 
-            const TOUCH_PREVIEW_OFFSET_Y = 56;
-            const TOUCH_PREVIEW_OFFSET_X = 56;
-
             function getCellFromEvent(e, offsetX, offsetY) {
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
@@ -4553,8 +4590,8 @@
                 touchDidMove = true;
                 const touch = e.touches[0];
                 if (uiMode !== 'move' && !pendingWallPos) {
-                    const offsetX = uiMode === 'vwall' ? TOUCH_PREVIEW_OFFSET_X : 0;
-                    const offsetY = uiMode === 'hwall' ? TOUCH_PREVIEW_OFFSET_Y : 0;
+                    const offsetX = uiMode === 'vwall' ? wallPreviewOffset : 0;
+                    const offsetY = uiMode === 'hwall' ? wallPreviewOffset : 0;
                     wallPreviewPos = getWallSnap(touch, offsetX, offsetY) || null;
                     touchAnchorPos = wallPreviewPos ? (getCellFromEvent(touch) || null) : null;
                     draw()
@@ -4565,8 +4602,8 @@
                 if (gameOver || isAnimating) return;
                 if (onlineState.active && !isMyOnlineTurn()) return;
                 const touch = e.changedTouches[0];
-                const offsetX = (touchDidMove && uiMode === 'vwall') ? TOUCH_PREVIEW_OFFSET_X : 0;
-                const offsetY = (touchDidMove && uiMode === 'hwall') ? TOUCH_PREVIEW_OFFSET_Y : 0;
+                const offsetX = (touchDidMove && uiMode === 'vwall') ? wallPreviewOffset : 0;
+                const offsetY = (touchDidMove && uiMode === 'hwall') ? wallPreviewOffset : 0;
                 if (uiMode === 'move') {
                     const pos = getCellFromEvent(touch);
                     if (!pos) return;
@@ -4675,6 +4712,43 @@
                 }
                 if (nameEntryView && nameEntryView.style.display === 'block') {
                     document.getElementById('btn-name-back').click();
+                    trapBackNav();
+                    return
+                }
+                // Online setup flow: back out of whichever nested step is
+                // currently showing (join code entry -> create/waiting room
+                // -> the create/join picker), one step at a time, using the
+                // same cancel/back buttons already wired to their onclick
+                // handlers — instead of falling through and exiting the site.
+                const onlineJoinViewEl = document.getElementById('online-join-view');
+                const onlineCreateViewEl = document.getElementById('online-create-view');
+                const onlineSetupViewEl = document.getElementById('online-setup-view');
+                if (onlineJoinViewEl && onlineJoinViewEl.style.display === 'flex') {
+                    document.getElementById('btn-online-cancel-join').click();
+                    trapBackNav();
+                    return
+                }
+                if (onlineCreateViewEl && onlineCreateViewEl.style.display === 'flex') {
+                    document.getElementById('btn-online-cancel-create').click();
+                    trapBackNav();
+                    return
+                }
+                if (onlineSetupViewEl && onlineSetupViewEl.style.display === 'block') {
+                    document.getElementById('btn-online-back1').click();
+                    trapBackNav();
+                    return
+                }
+                const offlinePickViewEl = document.getElementById('offline-mode-pick-view');
+                if (offlinePickViewEl && offlinePickViewEl.style.display === 'block') {
+                    document.getElementById('btn-offline-pick-back').click();
+                    trapBackNav();
+                    return
+                }
+                const onlineLobbyViewEl = document.getElementById('online-lobby-view');
+                if (onlineLobbyViewEl && onlineLobbyViewEl.style.display === 'block') {
+                    // No defined "back" step inside the timed name/avatar
+                    // lobby (leaving mid-lobby would desync the room) — just
+                    // absorb the back press so it can't exit the site.
                     trapBackNav();
                     return
                 }

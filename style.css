@@ -2743,6 +2743,68 @@
         .ios-toggle.on .ios-toggle-knob {
             transform: translateX(20px)
         }
+        .settings-row-stack {
+            flex-direction: column;
+            align-items: stretch
+        }
+        .settings-row-stack .settings-row-info {
+            width: 100%
+        }
+        .settings-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            padding-left: 50px
+        }
+        .settings-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            height: 5px;
+            border-radius: 3px;
+            background: #262f3c;
+            outline: none;
+            cursor: pointer
+        }
+        .settings-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fff, #dbe3ec);
+            box-shadow: 0 2px 6px rgb(0 0 0 / .4);
+            cursor: pointer;
+            border: 1px solid var(--border-color)
+        }
+        .settings-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fff, #dbe3ec);
+            box-shadow: 0 2px 6px rgb(0 0 0 / .4);
+            cursor: pointer;
+            border: 1px solid var(--border-color)
+        }
+        .settings-slider::-moz-range-progress {
+            background: #2563eb;
+            height: 5px;
+            border-radius: 3px
+        }
+        .settings-slider-value {
+            flex-shrink: 0;
+            min-width: 40px;
+            text-align: right;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums
+        }
+        html[dir="rtl"] .settings-slider-row {
+            padding-left: 0;
+            padding-right: 50px
+        }
         #game-over-overlay {
             position: fixed;
             top: 0;
@@ -3195,7 +3257,7 @@
         }
         #toast-container {
             position: fixed;
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+            top: calc(env(safe-area-inset-top, 0px) + var(--header-h, 56px) + 10px);
             left: 50%;
             transform: translateX(-50%);
             z-index: 400;
@@ -3206,6 +3268,13 @@
             pointer-events: none;
             width: 100%;
             max-width: 92vw
+        }
+        /* In-game screen only: toasts drop in from the bottom, above the
+           board controls, instead of the top — everywhere else in the app
+           (menus, dialogs, lobby, etc.) toasts always enter from the top. */
+        #toast-container.toast-pos-bottom {
+            top: auto;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 22px)
         }
         .toast {
             pointer-events: auto;
@@ -3218,8 +3287,11 @@
             max-width: 340px;
             overflow: hidden;
             opacity: 0;
-            transform: translateY(16px) scale(.94);
+            transform: translateY(-16px) scale(.94);
             transition: opacity 0.32s cubic-bezier(.34, 1.35, .64, 1), transform 0.32s cubic-bezier(.34, 1.35, .64, 1)
+        }
+        #toast-container.toast-pos-bottom .toast {
+            transform: translateY(16px) scale(.94)
         }
         .toast.show {
             opacity: 1;
@@ -3227,8 +3299,11 @@
         }
         .toast.leave {
             opacity: 0;
-            transform: translateY(8px) scale(.96);
+            transform: translateY(-8px) scale(.96);
             transition: opacity 0.2s ease, transform 0.2s ease
+        }
+        #toast-container.toast-pos-bottom .toast.leave {
+            transform: translateY(8px) scale(.96)
         }
         .toast-row {
             display: flex;
