@@ -327,7 +327,7 @@
                     rematchAcceptLabel: "Accept Opponent's Rematch",
                     rematchWaitingLabel: 'Waiting for opponent...',
                     opponentLeftMsg: 'Opponent left the game',
-                    disconnectBannerText: '{name} lost connection. They have {time} left to reconnect before automatically forfeiting the match.',
+                    disconnectOverlayLabel: 'Disconnected',
                     disconnectReconnectedToast: '{name} reconnected',
                     disconnectTimeoutToast: '{name} lost connection — forfeited the match',
                     matchPausedToast: 'Match paused — waiting for your opponent to reconnect',
@@ -378,27 +378,33 @@
             }
 
             // ===== Toast notifications ==========================================
-            // Same messages, same trigger rules as before — just a proper
-            // card instead of a single line of text: icon by type, a close
-            // button, and a footer that counts down to auto-dismiss (click it
-            // to pause). Multiple toasts can stack; the oldest is dropped
-            // once the stack gets too tall.
+            // Compact card: icon, single-line title, a collapse/pause chevron
+            // and a close button up top, with a slim progress bar tracking
+            // the auto-dismiss underneath — no secondary line of text, so it
+            // stays small on screen. Only one toast is ever shown at once:
+            // a new call instantly swaps out whatever is currently visible
+            // instead of stacking a second one below it.
             const TOAST_ICONS = {
                 success: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2"/><path d="M7.8 12.5l2.6 2.6 5.8-6.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
                 warning: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 3.6 21.3 20H2.7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9.6v4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>',
                 error: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2"/><path d="M12 7.2v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.2" r="1" fill="currentColor"/></svg>',
                 info: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2"/><path d="M12 10.8v5.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1" fill="currentColor"/></svg>'
             };
-            const TOAST_MAX_STACK = 3;
             const TOAST_DURATION_MS = 4000;
+            let activeToast = null; // { el, cleanup } — the single toast on screen, if any
 
             function showToast(message, type) {
                 type = TOAST_ICONS[type] ? type : 'info';
                 const container = document.getElementById('toast-container');
                 if (!container) return;
 
-                while (container.children.length >= TOAST_MAX_STACK) {
-                    container.firstElementChild.remove()
+                // Only one toast on screen at a time: cut the current one
+                // off immediately (no exit animation) so the new one can
+                // take its place without ever appearing stacked underneath.
+                if (activeToast) {
+                    activeToast.cleanup();
+                    activeToast.el.remove();
+                    activeToast = null
                 }
 
                 const el = document.createElement('div');
@@ -415,17 +421,17 @@
                 title.className = 'toast-title';
                 title.textContent = message;
                 body.appendChild(title);
+                const chevronBtn = document.createElement('button');
+                chevronBtn.type = 'button';
+                chevronBtn.className = 'toast-chevron';
+                chevronBtn.setAttribute('aria-label', 'Pause');
+                chevronBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                 const closeBtn = document.createElement('button');
                 closeBtn.type = 'button';
                 closeBtn.className = 'toast-close';
                 closeBtn.setAttribute('aria-label', 'Close');
                 closeBtn.innerHTML = '&times;';
-                row.append(icon, body, closeBtn);
-
-                const footer = document.createElement('div');
-                footer.className = 'toast-footer';
-                const footerText = document.createElement('span');
-                footer.appendChild(footerText);
+                row.append(icon, body, chevronBtn, closeBtn);
 
                 const progress = document.createElement('div');
                 progress.className = 'toast-progress';
@@ -433,23 +439,23 @@
                 progressBar.className = 'toast-progress-bar';
                 progress.appendChild(progressBar);
 
-                el.append(row, footer, progress);
+                el.append(row, progress);
                 container.appendChild(el);
 
                 let remainingMs = TOAST_DURATION_MS;
                 let lastTick = Date.now();
                 let paused = false;
                 let rafId = null;
-
-                function renderFooter() {
-                    const secs = Math.max(1, Math.ceil(remainingMs / 1000));
-                    footerText.innerHTML = 'This message will close in ' + secs + ' second' + (secs === 1 ? '' : 's') + '. <u>Click to stop.</u>'
-                }
+                let dismissed = false;
 
                 function dismiss() {
+                    if (dismissed) return;
+                    dismissed = true;
                     if (rafId) cancelAnimationFrame(rafId);
                     el.classList.remove('show');
-                    setTimeout(() => el.remove(), 250)
+                    el.classList.add('leave');
+                    setTimeout(() => el.remove(), 220);
+                    if (activeToast && activeToast.el === el) activeToast = null
                 }
 
                 function tick() {
@@ -458,18 +464,28 @@
                     remainingMs -= (now - lastTick);
                     lastTick = now;
                     if (remainingMs <= 0) { dismiss(); return }
-                    renderFooter();
                     progressBar.style.width = Math.max(0, (remainingMs / TOAST_DURATION_MS) * 100) + '%';
                     rafId = requestAnimationFrame(tick)
                 }
 
-                renderFooter();
                 closeBtn.onclick = dismiss;
-                footer.onclick = () => {
-                    if (paused) return;
-                    paused = true;
-                    if (rafId) cancelAnimationFrame(rafId);
-                    footerText.innerHTML = 'Paused — click the × to close.'
+                chevronBtn.onclick = () => {
+                    paused = !paused;
+                    chevronBtn.classList.toggle('paused', paused);
+                    if (paused) {
+                        if (rafId) cancelAnimationFrame(rafId)
+                    } else {
+                        lastTick = Date.now();
+                        rafId = requestAnimationFrame(tick)
+                    }
+                };
+
+                activeToast = {
+                    el,
+                    cleanup() {
+                        dismissed = true;
+                        if (rafId) cancelAnimationFrame(rafId)
+                    }
                 };
 
                 requestAnimationFrame(() => {
@@ -1015,34 +1031,29 @@
                 return m > 0 ? (m + ':' + String(s).padStart(2, '0')) : String(s)
             }
 
-            function updateDisconnectBanner() {
-                const banner = document.getElementById('disconnect-banner');
-                if (!banner) return;
-                const ids = Object.keys(onlineDisconnectTimers);
-                if (!onlineState.active || ids.length === 0) {
-                    banner.style.display = 'none';
-                    banner.innerHTML = '';
-                    return
-                }
-                banner.innerHTML = '';
-                ids.forEach(idStr => {
-                    const timer = onlineDisconnectTimers[idStr];
-                    const p = players.find(pl => pl.id === Number(idStr));
-                    const name = p ? playerDisplayName(p) : '';
-                    const row = document.createElement('div');
-                    row.className = 'disconnect-banner-row';
-                    const dot = document.createElement('span');
-                    dot.className = 'db-dot';
-                    const text = document.createElement('span');
-                    text.className = 'db-text';
-                    const timeStr = formatGraceTime(Math.max(0, timer.remaining));
-                    text.innerHTML = t('disconnectBannerText')
-                        .replace('{name}', escapeHTML(name))
-                        .replace('{time}', '<strong class="db-time">' + timeStr + '</strong>');
-                    row.append(dot, text);
-                    banner.appendChild(row)
-                });
-                banner.style.display = 'flex'
+            // Instead of one shared floating banner, each disconnected
+            // player's own card grows its "Disconnected" overlay in place
+            // (with a live grace-period countdown). A card can be rendered
+            // more than once (e.g. the mobile team layout duplicates it),
+            // so every matching .player-card gets updated, not just one.
+            function updateDisconnectOverlays() {
+                document.querySelectorAll('.player-card[data-player-id]').forEach(card => {
+                    const overlay = card.querySelector('.disconnect-overlay');
+                    if (!overlay) return;
+                    const timer = onlineState.active ? onlineDisconnectTimers[card.dataset.playerId] : null;
+                    if (!timer) {
+                        overlay.classList.remove('show');
+                        card.classList.remove('card-disconnected');
+                        return
+                    }
+                    const timeEl = overlay.querySelector('.do-timer');
+                    if (timeEl) timeEl.textContent = formatGraceTime(Math.max(0, timer.remaining));
+                    overlay.classList.add('show');
+                    // Force this specific card to full opacity even if it's
+                    // not the currently-active player — the overlay needs
+                    // to read clearly regardless of turn state.
+                    card.classList.add('card-disconnected')
+                })
             }
 
             function clearDisconnectCountdown(playerId) {
@@ -1050,13 +1061,13 @@
                 if (!timer) return;
                 clearInterval(timer.intervalId);
                 delete onlineDisconnectTimers[playerId];
-                updateDisconnectBanner()
+                updateDisconnectOverlays()
             }
 
             function clearAllDisconnectCountdowns() {
                 Object.keys(onlineDisconnectTimers).forEach(id => clearInterval(onlineDisconnectTimers[id].intervalId));
                 for (const id in onlineDisconnectTimers) delete onlineDisconnectTimers[id];
-                updateDisconnectBanner()
+                updateDisconnectOverlays()
             }
 
             // True while at least one seat is mid-grace-period. Used to pause
@@ -1093,12 +1104,12 @@
             function startDisconnectCountdown(player) {
                 if (gameOver || player.forfeited || player.finished) return;
                 if (onlineDisconnectTimers[player.id]) return; // already counting down
-                // No separate toast here on purpose — the disconnect banner
-                // below (with its live countdown) is the single, sole notice
-                // for this; a duplicate toast just repeated the same thing.
+                // No toast here on purpose — the disconnected player's own
+                // card overlay (with its live countdown) is the single,
+                // sole notice for this; a toast would just repeat it.
                 const timer = { remaining: DISCONNECT_GRACE_SECONDS, intervalId: null };
                 onlineDisconnectTimers[player.id] = timer;
-                updateDisconnectBanner();
+                updateDisconnectOverlays();
                 // The instant ANYONE disconnects — regardless of whose turn
                 // it currently is — we freeze the shared match clock (just
                 // stop the interval; timeBank numbers are left untouched) so
@@ -1112,11 +1123,11 @@
                     if (timer.remaining <= 0) {
                         clearInterval(timer.intervalId);
                         delete onlineDisconnectTimers[player.id];
-                        updateDisconnectBanner();
+                        updateDisconnectOverlays();
                         handleDisconnectTimeout(player);
                         return
                     }
-                    updateDisconnectBanner()
+                    updateDisconnectOverlays()
                 }, 1000)
             }
 
@@ -3260,8 +3271,29 @@
                 const reverseInternal = isTeamBIn4p || (forMobileTeamLayout && isRightSide);
                 info.appendChild(createWallGauge(p, isRightSide, reverseInternal));
                 info.appendChild(createPlayerTimer(p, reverseInternal));
-                card.append(avatar, info);
+                card.append(avatar, info, createDisconnectOverlay());
                 return card
+            }
+
+            // Covers just this player's own card while their connection is
+            // down — created hidden, toggled by updateDisconnectOverlays().
+            function createDisconnectOverlay() {
+                const overlay = document.createElement('div');
+                overlay.className = 'disconnect-overlay';
+                const icon = document.createElement('span');
+                icon.className = 'do-icon';
+                icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8.5 8.8a10.6 10.6 0 0 1 11 .3M5 12.2a15 15 0 0 1 3-2M12 18.2h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14.6a5.3 5.3 0 0 1 3.3 1.1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>';
+                const text = document.createElement('span');
+                text.className = 'do-text';
+                const label = document.createElement('span');
+                label.className = 'do-label';
+                label.textContent = t('disconnectOverlayLabel');
+                const timeEl = document.createElement('span');
+                timeEl.className = 'do-timer';
+                timeEl.textContent = '--';
+                text.append(label, timeEl);
+                overlay.append(icon, text);
+                return overlay
             }
 
             function getCoordStr(row, col) {
