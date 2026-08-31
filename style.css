@@ -3915,16 +3915,58 @@
 
 /* ================= HUNTER ROLE PICK (online Wolf & Sheep lobby) ================= */
 .hunter-role-pick {
-    margin-top: 6px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border-color)
+    margin-top: 10px;
+    padding: 18px 14px 20px;
+    border-top: none;
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    /* Dusk / moonlit-forest backdrop — the "waiting for the wolf & sheep
+       match to start" moment gets its own themed scene instead of just
+       sitting flush against the rest of the lobby card. */
+    background:
+        radial-gradient(circle at 20% 112%, rgba(46, 204, 113, .10), rgba(46, 204, 113, 0) 45%),
+        radial-gradient(circle at 84% 108%, rgba(231, 76, 60, .10), rgba(231, 76, 60, 0) 45%),
+        linear-gradient(165deg, #2c2557 0%, #1b1a3d 48%, #0c0e22 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07), 0 6px 18px rgba(0, 0, 0, .25)
+}
+.hunter-role-pick::before {
+    /* Soft moon glow in the corner */
+    content: '';
+    position: absolute;
+    top: -22px;
+    right: -14px;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 32%, #fff8e0 0%, #f3d98b 45%, rgba(243, 217, 139, 0) 76%);
+    opacity: .5;
+    filter: blur(.5px);
+    z-index: -1;
+    pointer-events: none
+}
+.hunter-role-pick::after {
+    /* Faint starfield */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(1.5px 1.5px at 12% 30%, rgba(255, 255, 255, .55), transparent),
+        radial-gradient(1.5px 1.5px at 34% 15%, rgba(255, 255, 255, .4), transparent),
+        radial-gradient(1px 1px at 62% 40%, rgba(255, 255, 255, .5), transparent),
+        radial-gradient(1.5px 1.5px at 78% 20%, rgba(255, 255, 255, .35), transparent),
+        radial-gradient(1px 1px at 90% 55%, rgba(255, 255, 255, .4), transparent);
+    z-index: -1;
+    pointer-events: none
 }
 .hunter-role-pick-label {
     text-align: center;
     font-size: 13px;
     font-weight: 700;
-    color: var(--text-main);
-    margin: 0 0 10px
+    color: #f2effc;
+    margin: 0 0 12px;
+    letter-spacing: .2px
 }
 .hunter-role-options {
     display: flex;
@@ -3937,12 +3979,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 12px 10px;
-    border-radius: 14px;
-    background: var(--card-bg);
-    border: 1.5px solid var(--border-color);
-    color: var(--text-main);
+    gap: 8px;
+    padding: 14px 10px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .06);
+    border: 1.5px solid rgba(255, 255, 255, .14);
+    backdrop-filter: blur(6px);
+    color: #f2effc;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.18s ease
@@ -3952,34 +3995,33 @@
 }
 .hunter-role-btn.selected {
     border-color: #2ecc71;
-    background: rgba(46, 204, 113, .12);
-    box-shadow: 0 0 0 2px rgba(46, 204, 113, .25)
+    background: rgba(46, 204, 113, .16);
+    box-shadow: 0 0 0 2px rgba(46, 204, 113, .3), 0 0 20px rgba(46, 204, 113, .22)
 }
 .hunter-role-icon {
-    width: 30px;
-    height: 30px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-main);
     overflow: hidden;
-    border-radius: 8px
+    border-radius: 50%;
+    padding: 8px;
+    background: rgba(255, 255, 255, .06);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1)
 }
 .hunter-role-icon svg {
     width: 100%;
     height: 100%
 }
-.hunter-role-icon img.role-icon-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block
-}
 .hunter-role-icon.icon-escaper {
-    color: #2ecc71
+    color: #2ecc71;
+    box-shadow: inset 0 0 0 1px rgba(46, 204, 113, .35), 0 0 14px rgba(46, 204, 113, .3)
 }
 .hunter-role-icon.icon-hunter {
-    color: #e74c3c
+    color: #e74c3c;
+    box-shadow: inset 0 0 0 1px rgba(231, 76, 60, .35), 0 0 14px rgba(231, 76, 60, .3)
 }
 .hunter-role-btn-label {
     font-size: 12.5px;
@@ -4002,13 +4044,6 @@
     height: 13px;
     flex-shrink: 0
 }
-.role-live-badge img.role-icon-img {
-    width: 15px;
-    height: 15px;
-    object-fit: contain;
-    flex-shrink: 0;
-    border-radius: 3px
-}
 .role-live-badge.role-escaper {
     color: #2ecc71
 }
@@ -4025,7 +4060,9 @@
 #hunter-role-reveal-overlay {
     position: fixed;
     inset: 0;
-    background: rgb(5 8 12 / .86);
+    background:
+        radial-gradient(circle at 50% 18%, rgba(90, 70, 160, .45), rgba(5, 8, 12, 0) 55%),
+        rgb(5 8 12 / .88);
     backdrop-filter: blur(3px);
     display: none;
     align-items: center;
@@ -4037,8 +4074,8 @@
     display: flex
 }
 .hunter-reveal-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
+    background: linear-gradient(165deg, #2c2557 0%, #1b1a3d 55%, #0c0e22 100%);
+    border: 1px solid rgba(255, 255, 255, .1);
     border-radius: 20px;
     padding: 26px 22px;
     max-width: 360px;
@@ -4051,12 +4088,12 @@
     margin: 0 0 6px;
     font-size: 17px;
     font-weight: 800;
-    color: var(--text-main)
+    color: #f2effc
 }
 .hunter-reveal-card p {
     margin: 0 0 20px;
     font-size: 12.5px;
-    color: var(--text-muted);
+    color: rgba(242, 239, 252, .65);
     line-height: 1.6
 }
 .hunter-reveal-slots {
@@ -4076,20 +4113,19 @@
     width: 68px;
     height: 68px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, .04);
-    border: 1.5px solid var(--border-color);
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .16), rgba(255, 255, 255, .02) 72%);
+    border: 1.5px solid rgba(255, 255, 255, .14);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 34px;
     line-height: 1;
-    overflow: hidden
+    overflow: hidden;
+    padding: 12px
 }
-.hunter-reveal-icon img.role-icon-img {
+.hunter-reveal-icon svg {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block
+    height: 100%
 }
 .hunter-reveal-icon.shuffling {
     animation: hunterRevealShuffle 0.28s ease-in-out infinite

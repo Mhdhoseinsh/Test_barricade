@@ -30,15 +30,21 @@
                 _msgListeners: [],
                 _presenceListeners: [],
                 _joinedAt: 0,
+                // حالت واقعی اتاق (2p/4p/hunter) همونیه که سرور موقع
+                // createRoom/joinRoom برمی‌گردونه — این تنها منبع معتبرشه.
+                // بلافاصله بعد از join (چه میزبان چه جوین‌شونده) پر می‌شه،
+                // بدون نیاز به منتظر موندن برای پیام جداگونه‌ی «start».
+                _roomMode: null,
 
-                async createRoom(maxPlayers) {
-                    const res = await emitAck('createRoom', { maxPlayers });
+                async createRoom(maxPlayers, mode) {
+                    const res = await emitAck('createRoom', { maxPlayers, mode });
                     if (!res || !res.ok) throw new Error((res && res.error) || 'create-failed');
                     return res.code
                 },
 
                 async roomExists(code) {
                     const res = await emitAck('roomExists', { code });
+                    if (res && res.mode) window.FBRoom._roomMode = res.mode;
                     return !!(res && res.exists)
                 },
 
@@ -48,6 +54,7 @@
                     window.FBRoom._roomCode = code;
                     window.FBRoom._mySlotId = res.slot;
                     window.FBRoom._joinedAt = Date.now();
+                    window.FBRoom._roomMode = res.mode || null;
                     return res.slot
                 },
 
@@ -89,7 +96,8 @@
                     window.FBRoom._msgListeners = [];
                     window.FBRoom._presenceListeners = [];
                     window.FBRoom._roomCode = null;
-                    window.FBRoom._mySlotId = null
+                    window.FBRoom._mySlotId = null;
+                    window.FBRoom._roomMode = null
                 }
             };
 

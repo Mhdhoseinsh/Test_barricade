@@ -919,7 +919,7 @@
                 onlineState._startSent = !1;
                 const maxP = onlineMaxPlayers();
                 try {
-                    const code = await window.FBRoom.createRoom(maxP);
+                    const code = await window.FBRoom.createRoom(maxP, onlineState.mode);
                     const slot = await window.FBRoom.joinRoom(code, maxP);
                     onlineState.localPlayerId = slot;
                     onlineCodeBox.textContent = code;
@@ -997,10 +997,29 @@
                         if (fromOtp) otpShakeError();
                         return
                     }
+                    // BUGFIX (mode mismatch between host & joiner): the room's
+                    // real mode (2p/4p/hunter) now comes straight from the
+                    // server's join response — the same place maxPlayers has
+                    // always come from — instead of relying only on the
+                    // 'start' broadcast that arrives later. Previously the
+                    // joiner kept onlineState.mode at its local default
+                    // ('2p') until 'start' showed up, so if that message was
+                    // delayed or arrived after this device had already begun
+                    // rendering the lobby, the two sides could show two
+                    // different modes (one Wolf & Sheep, one 2-player) for
+                    // the exact same room. Setting it here, right away, from
+                    // the server-authoritative value removes that race
+                    // entirely; the later 'start' message just reconfirms it.
+                    if (window.FBRoom._roomMode) {
+                        onlineState.mode = window.FBRoom._roomMode
+                    }
                     onlineState.localPlayerId = slot;
                     onlineJoinStatus.textContent = 'Connected! Waiting for the game to start...';
                     attachRoomMessageListener();
-                    attachRoomPresenceListener(maxP)
+                    // Recompute from the now-corrected mode (matters for a
+                    // 4-player room, where the initial guess above could
+                    // otherwise still watch only 2 seats).
+                    attachRoomPresenceListener(onlineMaxPlayers())
                 } catch (e) {
                     onlineJoinStatus.textContent = networkHintMsg + '\n[debug: ' + (e && (e.code || e.message) || e) + ']'
                 }
@@ -1944,10 +1963,13 @@
             }
 
             // Small icon set for the two Wolf & Sheep roles — used in the
-            // role-pick buttons, the live pick badges, and the lottery reveal.
+            // role-pick buttons, the live pick badges, and the lottery
+            // reveal. Inline SVGs (tinted via currentColor/CSS) instead of
+            // the old sheep.webp/wolf.webp image files, so the icons always
+            // render crisply and match the role's theme color everywhere.
             const ROLE_ICON_SVG = {
-                escaper: '<img src="sheep.webp" alt="Sheep" class="role-icon-img">',
-                hunter: '<img src="wolf.webp" alt="Wolf" class="role-icon-img">'
+                escaper: '<svg viewBox="0 0 64 64" class="role-icon-svg" aria-hidden="true"><g fill="currentColor"><circle cx="15" cy="25" r="9"/><circle cx="27" cy="16" r="10.5"/><circle cx="40" cy="17" r="10"/><circle cx="51" cy="27" r="9"/><circle cx="47" cy="41" r="9.5"/><circle cx="30" cy="45" r="12"/><circle cx="15" cy="39" r="8.5"/></g><ellipse cx="30" cy="43" rx="11" ry="9" fill="#fff8ec"/><circle cx="26" cy="41" r="1.8" fill="#2b2b2b"/><circle cx="35" cy="41" r="1.8" fill="#2b2b2b"/><path d="M27 47q3.5 2.6 7 0" stroke="#2b2b2b" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>',
+                hunter: '<svg viewBox="0 0 64 64" class="role-icon-svg" aria-hidden="true"><g fill="currentColor"><path d="M13 8 27 24 19 27z"/><path d="M51 8 37 24 45 27z"/><path d="M32 15c12.7 0 21 9.8 21 21.5C53 48.5 45 55 32 55S11 48.5 11 36.5C11 24.8 19.3 15 32 15z"/></g><circle cx="23.5" cy="34" r="2.4" fill="#1b1b1b"/><circle cx="40.5" cy="34" r="2.4" fill="#1b1b1b"/><path d="M32 37 26.5 44h11z" fill="#1b1b1b"/><path d="M24 48q8 4.5 16 0" stroke="#1b1b1b" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>'
             };
 
             function roleBadgeHTML(role) {

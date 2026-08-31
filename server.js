@@ -70,10 +70,17 @@ io.on('connection', (socket) => {
   socket.data.roomCode = null;
   socket.data.slot = null;
 
-  socket.on('createRoom', ({ maxPlayers } = {}, ack) => {
+  socket.on('createRoom', ({ maxPlayers, mode } = {}, ack) => {
     const code = genRoomCode();
     rooms.set(code, {
       maxPlayers: maxPlayers || 2,
+      // حالت بازی (2p / 4p / hunter) همینجا، لحظه‌ی ساخته‌شدن اتاق توسط
+      // میزبان، به‌عنوان تنها منبع معتبر ثبت می‌شود. قبلاً این مقدار فقط
+      // از طریق پیام «start» به بازیکن جوین‌شونده می‌رسید که یعنی اگه اون
+      // پیام دیر می‌رسید یا با تایمینگ بدی برخورد می‌کرد، کلاینتِ جوین‌شونده
+      // تا قبل از دریافتش با مقدار پیش‌فرض («2p») می‌موند — همون باگی که
+      // باعث می‌شد یک نفر توی روم گرگ‌ومیش رو ببینه و یکی دیگه ۲نفره.
+      mode: mode || '2p',
       createdAt: Date.now(),
       players: {}
     });
@@ -81,8 +88,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('roomExists', ({ code } = {}, ack) => {
-    const exists = rooms.has(String(code || '').toUpperCase());
-    if (ack) ack({ exists });
+    const room = rooms.get(String(code || '').toUpperCase());
+    if (ack) ack({ exists: !!room, mode: room ? room.mode : null });
   });
 
   socket.on('joinRoom', ({ code, maxPlayers } = {}, ack) => {
@@ -94,7 +101,7 @@ io.on('connection', (socket) => {
     // دکمه‌ی اتصال)، همون اسلات قبلی رو برگردون؛ یک اسلات دوم مصرف نکن.
     if (socket.data.roomCode === code && socket.data.slot !== null && socket.data.slot !== undefined) {
       const mine = room.players[socket.data.slot];
-      if (mine && mine.connected) { if (ack) ack({ ok: true, slot: socket.data.slot }); return; }
+      if (mine && mine.connected) { if (ack) ack({ ok: true, slot: socket.data.slot, mode: room.mode }); return; }
     }
 
     // ظرفیت واقعی اتاق همونیه که موقع ساخته‌شدنش (توسط میزبان) ثبت شده؛
@@ -114,7 +121,10 @@ io.on('connection', (socket) => {
     socket.data.slot = slot;
     socket.join('room:' + code);
 
-    if (ack) ack({ ok: true, slot });
+    // «mode» همیشه از خودِ روم (که موقع createRoom توسط میزبان ثبت شده)
+    // برگردونده می‌شه، نه از چیزی که کلاینتِ جوین‌شونده فرستاده — دقیقاً
+    // همون منطقی که «maxPlayers» از قبل داشت.
+    if (ack) ack({ ok: true, slot, mode: room.mode });
     broadcastPresence(code);
   });
 
