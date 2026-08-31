@@ -378,12 +378,12 @@
             }
 
             // ===== Toast notifications ==========================================
-            // Compact card: icon, single-line title, a collapse/pause chevron
-            // and a close button up top, with a slim progress bar tracking
-            // the auto-dismiss underneath — no secondary line of text, so it
-            // stays small on screen. Only one toast is ever shown at once:
-            // a new call instantly swaps out whatever is currently visible
-            // instead of stacking a second one below it.
+            // Compact card: icon, single-line title and a close button up
+            // top, with a slim progress bar tracking the auto-dismiss
+            // underneath — no secondary line of text, so it stays small on
+            // screen. Only one toast is ever shown at once: a new call
+            // instantly swaps out whatever is currently visible instead of
+            // stacking a second one below it.
             const TOAST_ICONS = {
                 success: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2"/><path d="M7.8 12.5l2.6 2.6 5.8-6.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
                 warning: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M12 3.6 21.3 20H2.7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9.6v4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>',
@@ -421,17 +421,12 @@
                 title.className = 'toast-title';
                 title.textContent = message;
                 body.appendChild(title);
-                const chevronBtn = document.createElement('button');
-                chevronBtn.type = 'button';
-                chevronBtn.className = 'toast-chevron';
-                chevronBtn.setAttribute('aria-label', 'Pause');
-                chevronBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                 const closeBtn = document.createElement('button');
                 closeBtn.type = 'button';
                 closeBtn.className = 'toast-close';
                 closeBtn.setAttribute('aria-label', 'Close');
                 closeBtn.innerHTML = '&times;';
-                row.append(icon, body, chevronBtn, closeBtn);
+                row.append(icon, body, closeBtn);
 
                 const progress = document.createElement('div');
                 progress.className = 'toast-progress';
@@ -444,7 +439,6 @@
 
                 let remainingMs = TOAST_DURATION_MS;
                 let lastTick = Date.now();
-                let paused = false;
                 let rafId = null;
                 let dismissed = false;
 
@@ -459,7 +453,6 @@
                 }
 
                 function tick() {
-                    if (paused) return;
                     const now = Date.now();
                     remainingMs -= (now - lastTick);
                     lastTick = now;
@@ -469,16 +462,6 @@
                 }
 
                 closeBtn.onclick = dismiss;
-                chevronBtn.onclick = () => {
-                    paused = !paused;
-                    chevronBtn.classList.toggle('paused', paused);
-                    if (paused) {
-                        if (rafId) cancelAnimationFrame(rafId)
-                    } else {
-                        lastTick = Date.now();
-                        rafId = requestAnimationFrame(tick)
-                    }
-                };
 
                 activeToast = {
                     el,
@@ -3271,27 +3254,36 @@
                 const reverseInternal = isTeamBIn4p || (forMobileTeamLayout && isRightSide);
                 info.appendChild(createWallGauge(p, isRightSide, reverseInternal));
                 info.appendChild(createPlayerTimer(p, reverseInternal));
-                card.append(avatar, info, createDisconnectOverlay());
+                card.append(avatar, info, createDisconnectOverlay(p));
                 return card
             }
 
             // Covers just this player's own card while their connection is
             // down — created hidden, toggled by updateDisconnectOverlays().
-            function createDisconnectOverlay() {
+            // Shows the player's own name front and center (not just left
+            // to show through underneath) so it stays readable at a glance.
+            function createDisconnectOverlay(p) {
                 const overlay = document.createElement('div');
                 overlay.className = 'disconnect-overlay';
+                overlay.dataset.playerId = p.id;
                 const icon = document.createElement('span');
                 icon.className = 'do-icon';
-                icon.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8.5 8.8a10.6 10.6 0 0 1 11 .3M5 12.2a15 15 0 0 1 3-2M12 18.2h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14.6a5.3 5.3 0 0 1 3.3 1.1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>';
+                icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8.5 8.8a10.6 10.6 0 0 1 11 .3M5 12.2a15 15 0 0 1 3-2M12 18.2h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14.6a5.3 5.3 0 0 1 3.3 1.1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>';
                 const text = document.createElement('span');
                 text.className = 'do-text';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'do-name';
+                nameEl.textContent = playerDisplayName(p);
+                const statusRow = document.createElement('span');
+                statusRow.className = 'do-status';
                 const label = document.createElement('span');
                 label.className = 'do-label';
                 label.textContent = t('disconnectOverlayLabel');
                 const timeEl = document.createElement('span');
                 timeEl.className = 'do-timer';
                 timeEl.textContent = '--';
-                text.append(label, timeEl);
+                statusRow.append(label, timeEl);
+                text.append(nameEl, statusRow);
                 overlay.append(icon, text);
                 return overlay
             }
@@ -3618,30 +3610,49 @@
                 ctx.fillStyle = '#acb8c8';
                 ctx.shadowColor = 'rgba(255,255,255,0.1)';
                 ctx.shadowBlur = 6;
-                for (let r = 0; r < 9; r++)
-                    for (let c = 0; c < 9; c++) {
-                        if (hWalls[r][c]) {
-                            let wp = 1;
-                            if (wallAnimation && wallAnimation.isH && wallAnimation.row === r && wallAnimation.col === c) wp =
-                                wallAnimation.progress;
-                            ctx.globalAlpha = wp;
-                            ctx.beginPath();
-                            ctx.roundRect(padding + c * cellSize, padding + (r + 1) * cellSize - 3, cellSize, 6, 3);
-                            ctx.fill()
-                        }
+                // Draw each wall as a single continuous piece — a placed
+                // wall always spans 2 cells (hWalls[row][col] and
+                // hWalls[row][col+1] both get set together in confirmWall),
+                // but drawing them as two independent rounded rects left a
+                // visible seam right where the two halves met. Grouping
+                // consecutive true cells (that share the same fade-in
+                // opacity) into one rect removes that seam and also means
+                // a wall placed mid-animation fades in as one solid piece
+                // instead of only its first half animating.
+                for (let r = 0; r < 9; r++) {
+                    let c = 0;
+                    while (c < 9) {
+                        if (!hWalls[r][c]) { c++; continue }
+                        const alphaOf = cc => (wallAnimation && wallAnimation.isH && wallAnimation.row === r &&
+                            (cc === wallAnimation.col || cc === wallAnimation.col + 1)) ? wallAnimation.progress : 1;
+                        const startC = c;
+                        const a0 = alphaOf(c);
+                        let endC = c;
+                        while (endC + 1 < 9 && hWalls[r][endC + 1] && alphaOf(endC + 1) === a0) endC++;
+                        ctx.globalAlpha = a0;
+                        ctx.beginPath();
+                        ctx.roundRect(padding + startC * cellSize, padding + (r + 1) * cellSize - 3, (endC - startC + 1) * cellSize, 6, 3);
+                        ctx.fill();
+                        c = endC + 1
                     }
-                for (let r = 0; r < 9; r++)
-                    for (let c = 0; c < 9; c++) {
-                        if (vWalls[r][c]) {
-                            let wp = 1;
-                            if (wallAnimation && !wallAnimation.isH && wallAnimation.row === r && wallAnimation.col === c) wp =
-                                wallAnimation.progress;
-                            ctx.globalAlpha = wp;
-                            ctx.beginPath();
-                            ctx.roundRect(padding + (c + 1) * cellSize - 3, padding + r * cellSize, 8, cellSize, 3);
-                            ctx.fill()
-                        }
+                }
+                for (let c = 0; c < 9; c++) {
+                    let r = 0;
+                    while (r < 9) {
+                        if (!vWalls[r][c]) { r++; continue }
+                        const alphaOf = rr => (wallAnimation && !wallAnimation.isH && wallAnimation.col === c &&
+                            (rr === wallAnimation.row || rr === wallAnimation.row + 1)) ? wallAnimation.progress : 1;
+                        const startR = r;
+                        const a0 = alphaOf(r);
+                        let endR = r;
+                        while (endR + 1 < 9 && vWalls[endR + 1][c] && alphaOf(endR + 1) === a0) endR++;
+                        ctx.globalAlpha = a0;
+                        ctx.beginPath();
+                        ctx.roundRect(padding + (c + 1) * cellSize - 3, padding + startR * cellSize, 8, (endR - startR + 1) * cellSize, 3);
+                        ctx.fill();
+                        r = endR + 1
                     }
+                }
                 ctx.globalAlpha = 1;
                 ctx.shadowBlur = 0;
                 for (const p of players) {
