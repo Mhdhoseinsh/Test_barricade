@@ -2346,7 +2346,6 @@
                 setTextContent('lbl-help', t('howToPlay'));
                 setTextContent('mode-classic-title', t('modeClassicTitle'));
                 setTextContent('mode-classic-desc', t('modeClassicDesc'));
-                setTextContent('mode-classic-badge', t('modeClassicBadge'));
                 setTextContent('pc-2-label', t('pc2Label'));
                 setTextContent('pc-4-label', t('pc4Label'));
                 setTextContent('team-group-1-label', t('teamA'));

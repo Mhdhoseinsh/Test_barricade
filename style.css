@@ -262,9 +262,9 @@
             box-shadow: inset 0 1px 1px rgb(255 255 255/.25)
         }
         /* Offline mode-pick screen: Classic (checkered race flag) and Hunter
-           & Survivor / Wolf vs Sheep (wolf silhouette + crescent moon —
-           "gorg-o-mish") icons, drawn as minimal inline glyphs instead of
-           loading 4p.webp/huntersurvivor.webp. */
+           & Survivor (crosshair reticle stalking a fleeing runner) icons,
+           drawn as minimal inline glyphs instead of loading
+           4p.webp/huntersurvivor.webp. */
         .mode-icon.icon-classic svg,
         .mode-icon.icon-hunter svg {
             width: 60%;
@@ -275,7 +275,9 @@
             box-shadow: inset 0 1px 1px rgb(255 255 255/.25)
         }
         .mode-icon.icon-hunter {
-            background: linear-gradient(160deg, #ff9a56 0%, #a24a86 48%, #211540 100%);
+            background:
+                radial-gradient(120% 120% at 22% 18%, rgba(255,209,107,.55) 0%, transparent 42%),
+                linear-gradient(155deg, #ff5f6d 0%, #862d6e 48%, #170b2e 100%);
             box-shadow: inset 0 1px 1px rgb(255 255 255/.25)
         }
         .mode-btn:hover .mode-icon.icon-classic,
