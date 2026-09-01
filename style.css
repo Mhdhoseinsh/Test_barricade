@@ -265,10 +265,13 @@
            & Survivor (crosshair reticle stalking a fleeing runner) icons,
            drawn as minimal inline glyphs instead of loading
            4p.webp/huntersurvivor.webp. */
-        .mode-icon.icon-classic svg,
-        .mode-icon.icon-hunter svg {
+        .mode-icon.icon-classic svg {
             width: 60%;
             height: 60%
+        }
+        .mode-icon.icon-hunter svg {
+            width: 82%;
+            height: 82%
         }
         .mode-icon.icon-classic {
             background: linear-gradient(135deg, #ffd76b, #f2994a 75%);
