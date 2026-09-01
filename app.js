@@ -1,4 +1,35 @@
         (function() {
+            // Wraps every localStorage call in the file. Some browsers/extensions
+            // throw on ANY localStorage access (not just quota errors) — e.g.
+            // Safari private mode edge cases, storage-blocking privacy extensions,
+            // some enterprise/managed-device policies, or third-party iframe
+            // embeds. Before this helper existed, the very first executable line
+            // of this script read localStorage directly with no try/catch, so on
+            // an affected browser that one line threw and silently killed the
+            // entire script — blank, non-functional page, no error shown to the
+            // player. Every localStorage.* call below now goes through these so a
+            // storage failure only costs that one feature (e.g. saved name/sound
+            // preference), never the whole game.
+            function safeStorageGet(key) {
+                try { return localStorage.getItem(key) } catch (e) { return null }
+            }
+            function safeStorageSet(key, value) {
+                try { localStorage.setItem(key, value); return !0 } catch (e) { return !1 }
+            }
+            function safeStorageRemove(key) {
+                try { localStorage.removeItem(key) } catch (e) {}
+            }
+
+            // Registering this actually turns on the caching strategy already
+            // written in sw.js (fonts/icons/webp served from disk on repeat
+            // visits) — previously the file existed but nothing ever called
+            // register(), so it never ran.
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js').catch(() => {})
+                });
+            }
+
             const canvas = document.getElementById('boardCanvas');
             const ctx = canvas.getContext('2d');
             const padding = 20;
@@ -6,7 +37,7 @@
             const colLetters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
             const ITEMS_PER_PAGE = 8;
             let sfxCtx = null;
-            let sfxEnabled = localStorage.getItem('barricade-sfx') !== 'off';
+            let sfxEnabled = safeStorageGet('barricade-sfx') !== 'off';
 
             function getSfxCtx() {
                 if (!sfxEnabled) return null;
@@ -199,8 +230,8 @@
                 shakeToShowHint: 'Tap the small dot to bring the icon back',
                 aboutTitle: 'About Us',
                     aboutTagline: 'Strategy. Walls. Victory.',
-                    aboutText: 'Route 9 is an offline, pass-and-play strategy board game where players race to reach the opposite side while placing walls to slow each other down.',
-                    aboutFeature1: 'Offline play',
+                    aboutText: 'Route 9 is a strategy board game where players race to reach the opposite side while placing walls to slow each other down — play pass-and-play offline, or challenge a friend online.',
+                    aboutFeature1: 'Offline & online play',
                     aboutFeature2: '2–4 players',
                     aboutFeature3: 'Wall strategy',
                     aboutCreatorLabel: 'Created by',
@@ -1871,14 +1902,14 @@
                 return (Math.abs(r1 - r2) + Math.abs(c1 - c2)) === 1
             }
             let currentNames = {
-                p1: localStorage.getItem('barricade-name-p1') || '',
-                p2: localStorage.getItem('barricade-name-p2') || '',
-                red: localStorage.getItem('barricade-name-red') || '',
-                blue: localStorage.getItem('barricade-name-blue') || '',
-                green: localStorage.getItem('barricade-name-green') || '',
-                yellow: localStorage.getItem('barricade-name-yellow') || '',
-                hunter: localStorage.getItem('barricade-name-hunter') || '',
-                escaper: localStorage.getItem('barricade-name-escaper') || ''
+                p1: safeStorageGet('barricade-name-p1') || '',
+                p2: safeStorageGet('barricade-name-p2') || '',
+                red: safeStorageGet('barricade-name-red') || '',
+                blue: safeStorageGet('barricade-name-blue') || '',
+                green: safeStorageGet('barricade-name-green') || '',
+                yellow: safeStorageGet('barricade-name-yellow') || '',
+                hunter: safeStorageGet('barricade-name-hunter') || '',
+                escaper: safeStorageGet('barricade-name-escaper') || ''
             };
             const CUSTOM_COLORS = ['#E74C3C', '#E91E63', '#FF5722', '#FF9800', '#F1C40F', '#CDDC39', '#8BC34A', '#2ECC71', '#1ABC9C', '#00BCD4', '#03A9F4', '#3498DB', '#2979FF', '#3F51B5', '#673AB7', '#9C27B0', '#E040FB', '#FF4081', '#795548', '#607D8B', '#FF6F00', '#76FF03', '#00E676', '#448AFF'];
             const DEFAULT_COLOR_FOR = {
@@ -1894,7 +1925,7 @@
 
             function loadCustom(slot) {
                 try {
-                    return JSON.parse(localStorage.getItem('barricade-custom-' + slot)) || {}
+                    return JSON.parse(safeStorageGet('barricade-custom-' + slot)) || {}
                 } catch (e) {
                     return {}
                 }
@@ -1948,7 +1979,7 @@
                     b.dataset.color = c;
                     b.onclick = () => {
                         currentCustom[slot].color = c;
-                        localStorage.setItem('barricade-custom-' + slot, JSON.stringify(currentCustom[slot]));
+                        safeStorageSet('barricade-custom-' + slot, JSON.stringify(currentCustom[slot]));
                         refreshSwatchUI(slot)
                     };
                     colorContainer.appendChild(b)
@@ -2010,7 +2041,7 @@
                     b.dataset.color = c;
                     b.onclick = () => {
                         onlineLobby.me.color = c;
-                        localStorage.setItem('barricade-online-color', c);
+                        safeStorageSet('barricade-online-color', c);
                         refreshOnlineLobbySwatchUI();
                         broadcastOnlineProfile()
                     };
@@ -2022,7 +2053,7 @@
             if (onlineLobbyNameInput) {
                 onlineLobbyNameInput.oninput = (e) => {
                     onlineLobby.me.name = e.target.value.slice(0, 13);
-                    localStorage.setItem('barricade-online-name', onlineLobby.me.name);
+                    safeStorageSet('barricade-online-name', onlineLobby.me.name);
                     broadcastOnlineProfile()
                 }
             }
@@ -2120,8 +2151,8 @@
             function showOnlineLobby(mode) {
                 const meSlot = slotNameForId(mode, onlineState.localPlayerId);
                 onlineLobby.mySlot = meSlot;
-                const savedOnlineName = localStorage.getItem('barricade-online-name');
-                const savedOnlineColor = localStorage.getItem('barricade-online-color');
+                const savedOnlineName = safeStorageGet('barricade-online-name');
+                const savedOnlineColor = safeStorageGet('barricade-online-color');
                 onlineLobby.me = {
                     name: (savedOnlineName !== null ? savedOnlineName : (currentNames[meSlot] || '')),
                     color: savedOnlineColor || customColor(meSlot)
@@ -2481,7 +2512,7 @@
 
             function toggleSound() {
                 sfxEnabled = !sfxEnabled;
-                localStorage.setItem('barricade-sfx', sfxEnabled ? 'on' : 'off');
+                safeStorageSet('barricade-sfx', sfxEnabled ? 'on' : 'off');
                 updateSoundUI();
                 if (sfxEnabled) sfxToggle()
             }
@@ -3153,22 +3184,22 @@
                 if (selectedMode === '2p') {
                     currentNames.p1 = document.getElementById('input-name-p1').value.trim();
                     currentNames.p2 = document.getElementById('input-name-p2').value.trim();
-                    localStorage.setItem('barricade-name-p1', currentNames.p1);
-                    localStorage.setItem('barricade-name-p2', currentNames.p2)
+                    safeStorageSet('barricade-name-p1', currentNames.p1);
+                    safeStorageSet('barricade-name-p2', currentNames.p2)
                 } else if (selectedMode === '4p') {
                     currentNames.red = document.getElementById('input-name-red').value.trim();
                     currentNames.blue = document.getElementById('input-name-blue').value.trim();
                     currentNames.green = document.getElementById('input-name-green').value.trim();
                     currentNames.yellow = document.getElementById('input-name-yellow').value.trim();
-                    localStorage.setItem('barricade-name-red', currentNames.red);
-                    localStorage.setItem('barricade-name-blue', currentNames.blue);
-                    localStorage.setItem('barricade-name-green', currentNames.green);
-                    localStorage.setItem('barricade-name-yellow', currentNames.yellow)
+                    safeStorageSet('barricade-name-red', currentNames.red);
+                    safeStorageSet('barricade-name-blue', currentNames.blue);
+                    safeStorageSet('barricade-name-green', currentNames.green);
+                    safeStorageSet('barricade-name-yellow', currentNames.yellow)
                 } else {
                     currentNames.hunter = document.getElementById('input-name-hunter').value.trim();
                     currentNames.escaper = document.getElementById('input-name-escaper').value.trim();
-                    localStorage.setItem('barricade-name-hunter', currentNames.hunter);
-                    localStorage.setItem('barricade-name-escaper', currentNames.escaper)
+                    safeStorageSet('barricade-name-hunter', currentNames.hunter);
+                    safeStorageSet('barricade-name-escaper', currentNames.escaper)
                 }
                 currentTurnTimerSeconds = selectedTimerSeconds;
                 initGame(selectedMode)
@@ -4630,14 +4661,14 @@
             const WALL_OFFSET_MIN = 0;
             const WALL_OFFSET_MAX = 120;
             function loadWallPreviewOffset() {
-                const raw = parseInt(localStorage.getItem('barricade-wall-offset'), 10);
+                const raw = parseInt(safeStorageGet('barricade-wall-offset'), 10);
                 if (isNaN(raw)) return 56;
                 return Math.min(WALL_OFFSET_MAX, Math.max(WALL_OFFSET_MIN, raw))
             }
             let wallPreviewOffset = loadWallPreviewOffset();
             function setWallPreviewOffset(px) {
                 wallPreviewOffset = Math.min(WALL_OFFSET_MAX, Math.max(WALL_OFFSET_MIN, px));
-                localStorage.setItem('barricade-wall-offset', String(wallPreviewOffset))
+                safeStorageSet('barricade-wall-offset', String(wallPreviewOffset))
             }
             const wallOffsetSlider = document.getElementById('wall-offset-slider');
             const wallOffsetValue = document.getElementById('wall-offset-value');
