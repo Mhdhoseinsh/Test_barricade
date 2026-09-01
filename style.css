@@ -261,13 +261,14 @@
             background: linear-gradient(135deg, #ff9d5c, #ee5a6f 70%);
             box-shadow: inset 0 1px 1px rgb(255 255 255/.25)
         }
-        /* Offline mode-pick screen: Classic (racing pawns) and Hunter &
-           Survivor / Wolf vs Sheep (wolf howling at the moon — "gorg-o-mish")
-           icons, drawn inline instead of loading 4p.webp/huntersurvivor.webp. */
+        /* Offline mode-pick screen: Classic (checkered race flag) and Hunter
+           & Survivor / Wolf vs Sheep (wolf silhouette + crescent moon —
+           "gorg-o-mish") icons, drawn as minimal inline glyphs instead of
+           loading 4p.webp/huntersurvivor.webp. */
         .mode-icon.icon-classic svg,
         .mode-icon.icon-hunter svg {
-            width: 68%;
-            height: 68%
+            width: 60%;
+            height: 60%
         }
         .mode-icon.icon-classic {
             background: linear-gradient(135deg, #ffd76b, #f2994a 75%);
