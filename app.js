@@ -1736,9 +1736,15 @@
             // not a per-turn reset. Only the current player's bank ticks down; it pauses
             // on their opponent's turn and resumes exactly where it left off.
             const DEFAULT_TIMER_SECONDS = 120;
+            const VALID_TIMER_SECONDS = [0, 30, 60, 120, 300, 600];
+            function loadSelectedTimerSeconds() {
+                const raw = parseInt(safeStorageGet('barricade-timer-secs'), 10);
+                if (isNaN(raw) || !VALID_TIMER_SECONDS.includes(raw)) return DEFAULT_TIMER_SECONDS;
+                return raw
+            }
             let selectedGameTypeOnline = false;
-            let selectedTimerSeconds = DEFAULT_TIMER_SECONDS;
-            let currentTurnTimerSeconds = DEFAULT_TIMER_SECONDS;
+            let selectedTimerSeconds = loadSelectedTimerSeconds();
+            let currentTurnTimerSeconds = selectedTimerSeconds;
             let turnTimerInterval = null;
             let turnTimerPlayerId = null;
             // Absolute real-world timestamp (Date.now()) at which the current
@@ -3048,7 +3054,11 @@
                 if (soundBtnHeader) soundBtnHeader.classList.add('visible');
                 sfxGameStart()
             }
-            let classicSubMode = '2p';
+            function loadClassicSubMode() {
+                const raw = safeStorageGet('barricade-classic-submode');
+                return raw === '4p' ? '4p' : '2p'
+            }
+            let classicSubMode = loadClassicSubMode();
             document.getElementById('btn-start-classic').onclick = () => { nameEntryOrigin = 'offline'; showNameEntry(classicSubMode, !0) };
             document.getElementById('btn-start-hunter').onclick = () => { nameEntryOrigin = 'offline'; showNameEntry('hunter') };
             document.getElementById('btn-pc-2').onclick = () => switchClassicSubMode('2p');
@@ -3099,6 +3109,7 @@
             function setSelectedTimer(secs) {
                 if (secs === 0 && selectedGameTypeOnline) return;
                 selectedTimerSeconds = secs;
+                safeStorageSet('barricade-timer-secs', String(secs));
                 document.querySelectorAll('#timer-chip-group .timer-chip').forEach(chip => {
                     chip.classList.toggle('active', parseInt(chip.dataset.secs, 10) === secs)
                 })
@@ -3109,6 +3120,7 @@
 
             function switchClassicSubMode(mode) {
                 classicSubMode = mode;
+                safeStorageSet('barricade-classic-submode', mode);
                 selectedMode = mode;
                 const fields2p = document.getElementById('name-fields-2p');
                 const fields4p = document.getElementById('name-fields-4p');
@@ -3126,7 +3138,7 @@
                 document.getElementById('online-create-mode-pick').style.display = 'none';
                 document.getElementById('online-code-entry-wrap').style.display = 'none';
                 setGameType(!1);
-                setSelectedTimer(DEFAULT_TIMER_SECONDS);
+                setSelectedTimer(selectedTimerSeconds);
                 const pcToggle = document.getElementById('player-count-toggle');
                 if (isClassic) {
                     pcToggle.style.display = 'flex';
@@ -4659,10 +4671,11 @@
             };
 
             const WALL_OFFSET_MIN = 0;
-            const WALL_OFFSET_MAX = 120;
+            const WALL_OFFSET_MAX = 63;
+            const WALL_OFFSET_DEFAULT = 54;
             function loadWallPreviewOffset() {
                 const raw = parseInt(safeStorageGet('barricade-wall-offset'), 10);
-                if (isNaN(raw)) return 56;
+                if (isNaN(raw)) return WALL_OFFSET_DEFAULT;
                 return Math.min(WALL_OFFSET_MAX, Math.max(WALL_OFFSET_MIN, raw))
             }
             let wallPreviewOffset = loadWallPreviewOffset();
